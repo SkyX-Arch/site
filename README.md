@@ -78,8 +78,43 @@ else in the page depends on the parsing details.
 ## Editing content
 
 Everything that ISN'T pulled live — the ROM name, tagline, device spec cards,
-install steps, and the logo — lives in `data.json`. Field-by-field notes are
-inline under `_comment` keys.
+install guide, links, and the logo — lives in `data.json`. Field-by-field
+notes are inline under `_comment` keys.
+
+**The Downloads link (`links.downloads`) is never overwritten by the live
+release feed** — it stays whatever you set it to in `data.json` (by default,
+the ROM's `.../releases/latest` page). This is deliberate: the release feed's
+`download` field points at one specific build's `.zip`, which would go stale;
+a `releases/latest` page always redirects to whatever is newest.
+
+### Install guide
+
+`installGuide` in `data.json` drives the whole "Installing…" section and is
+built to be reusable for any ROM/device, not just this one:
+
+- `warning` — a red/tertiary callout at the top (liability disclaimer, etc).
+- `requirements` — a checklist of files to grab before starting. Each item is
+  either `{ "label", "url" }` for a one-off link, or `{ "label", "linkRef" }`
+  where `linkRef` is a key from `links` (e.g. `"downloads"`, `"gapps"`) so the
+  requirement always points at the same URL as the rest of the page — no
+  duplicate links to keep in sync. Add `"optional": true` to tag an item as
+  optional. Requirements whose link isn't configured (empty string) are
+  skipped automatically.
+- `prerequisites` — a plain checklist under Requirements (bootloader unlocked,
+  etc.) with no links.
+- `importantNote` — a second (primary-colored) callout, typically placed
+  after the requirements.
+- `steps` — an ordered array; each step can mix and match:
+  - `title` (required), `description` (plain text)
+  - `list` — a numbered sub-list (e.g. "Select Wipe all data")
+  - `code` — a string or array of strings rendered as a copyable command
+    block (a copy button is added automatically)
+  - `alternative` — a nested `{ note, code }` block for "if that fails, try
+    this instead" cases
+  - `important` / `note` — a short callout or muted footnote under the step
+
+To reuse this page for a different ROM, only `installGuide` and `links` need
+new values — nothing in `main.js` or the CSS is specific to any one device.
 
 Images:
 - `assets/img/logo.svg` — the logo, used in both the header and hero. Replace

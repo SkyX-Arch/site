@@ -21,8 +21,21 @@ const ICONS = {
   tag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 10 12.5 2.5 4 3l-.5 8.5L11 19l9-9z"/><circle cx="8.5" cy="7.5" r="1.2" fill="currentColor"/></svg>',
   telegram: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M21.5 3.5 2.7 10.9c-1.2.5-1.2 1.2-.2 1.5l4.8 1.5 1.8 5.6c.2.6.4.8.9.8.4 0 .6-.2.9-.5l2.2-2.1 4.6 3.4c.8.5 1.4.2 1.6-.8l3-14c.3-1.2-.5-1.8-1.8-1.8z"/></svg>',
   box: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 8l9-5 9 5-9 5-9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/></svg>',
-  firmware: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/><path d="M9 9h6v6H9z"/></svg>'
+  firmware: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="5" width="14" height="14" rx="2"/><path d="M9 2v3M15 2v3M9 19v3M15 19v3M2 9h3M2 15h3M19 9h3M19 15h3"/><path d="M9 9h6v6H9z"/></svg>',
+  warning: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4"/><circle cx="12" cy="17" r=".6" fill="currentColor"/></svg>',
+  info: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 11v6"/><circle cx="12" cy="7.5" r=".6" fill="currentColor"/></svg>',
+  copy: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 12l5 5L20 6"/></svg>'
 };
+
+// Escapes text before it goes inside a code block — shell commands often
+// contain characters like < > that would otherwise break the markup.
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+}
 
 function iconMarkup(name) {
   return ICONS[name] || ICONS.tag;
@@ -96,7 +109,9 @@ function applyRemoteRelease(pageData, release) {
   pageData.latestRelease.maintainer = release.maintainer;
   pageData.latestRelease.size = formatSize(release.size);
 
-  if (release.download) pageData.links.downloads = release.download;
+  // NOTE: links.downloads is intentionally NOT overwritten here — it stays
+  // fully controlled by data.json (e.g. a stable ".../releases/latest" page)
+  // rather than being replaced by this build's direct .zip URL.
   if (release.telegram) pageData.links.telegram = release.telegram;
   if (release.gapps) pageData.links.gapps = release.gapps;
   if (release.firmware) pageData.links.firmware = release.firmware;
@@ -159,6 +174,16 @@ function renderHero(data) {
   document.getElementById('hero-title').textContent = rom.name;
   document.getElementById('hero-tagline').textContent = rom.tagline;
   document.getElementById('footer-rom-name').textContent = rom.name;
+
+  const creditEl = document.getElementById('footer-credit');
+  if (rom.author && rom.author.name) {
+    const link = rom.author.url
+      ? `<a href="${rom.author.url}" target="_blank" rel="noopener">${rom.author.name}</a>`
+      : rom.author.name;
+    creditEl.innerHTML = `Site &amp; ROM maintained by ${link}`;
+  } else {
+    creditEl.innerHTML = '';
+  }
 
   document.getElementById('hero-meta-version').textContent = latestRelease.version;
   document.getElementById('hero-meta-base').textContent = latestRelease.androidBase;
@@ -225,17 +250,126 @@ function renderChangelog(data) {
   `).join('');
 }
 
+// Renders a single command block (array of lines or one string) with a copy button.
+function renderCodeBlock(lines) {
+  if (!lines) return '';
+  const text = Array.isArray(lines) ? lines.join('\n') : lines;
+  return `
+    <div class="code-block">
+      <pre><code>${escapeHtml(text)}</code></pre>
+      <button type="button" class="code-copy-btn" data-copy-text="${encodeURIComponent(text)}" aria-label="Copy command">
+        ${iconMarkup('copy')}
+      </button>
+    </div>
+  `;
+}
+
+function renderCallout(type, text) {
+  if (!text) return '';
+  const icon = type === 'warning' ? 'warning' : 'info';
+  return `
+    <div class="install-callout install-callout-${type} reveal">
+      <span class="install-callout-icon">${iconMarkup(icon)}</span>
+      <span>${text}</span>
+    </div>
+  `;
+}
+
+// Warning banner, requirements checklist and prerequisites — all optional,
+// all sourced from data.installGuide so any ROM's guide can be dropped in.
+function renderInstallIntro(data) {
+  const container = document.getElementById('install-intro');
+  const guide = data.installGuide;
+
+  if (!guide) {
+    container.innerHTML = '';
+    return;
+  }
+
+  const requirementItems = (guide.requirements || [])
+    .map(req => {
+      // linkRef pulls the URL from data.links so it always matches the
+      // Downloads button; url is for one-off links that don't belong there.
+      const url = req.linkRef ? data.links[req.linkRef] : req.url;
+      if (!url) return ''; // skip requirements whose link isn't configured
+      const optionalTag = req.optional ? '<span class="requirement-optional-tag">optional</span>' : '';
+      return `<li><a href="${url}" target="_blank" rel="noopener">${req.label}</a>${optionalTag}</li>`;
+    })
+    .filter(Boolean)
+    .join('');
+
+  const prereqItems = (guide.prerequisites || [])
+    .map(item => `<li>${item}</li>`)
+    .join('');
+
+  const requirementsBlock = requirementItems ? `
+    <div class="install-requirements reveal">
+      <div class="install-requirements-title">Requirements</div>
+      <ul class="install-requirements-list">${requirementItems}</ul>
+      ${prereqItems ? `
+        <div class="install-prereqs-title">Also required</div>
+        <ul class="install-prereqs-list">${prereqItems}</ul>
+      ` : ''}
+    </div>
+  ` : '';
+
+  container.innerHTML = [
+    renderCallout('warning', guide.warning),
+    requirementsBlock,
+    renderCallout('important', guide.importantNote)
+  ].join('');
+}
+
+// Numbered steps — each one can mix and match description / ordered list /
+// code block / a nested "if that fails" alternative / a closing note.
 function renderInstallSteps(data) {
   const container = document.getElementById('install-steps');
-  container.innerHTML = data.installSteps.map(step => `
+  const guide = data.installGuide;
+
+  if (!guide || !guide.steps) {
+    container.innerHTML = '';
+    return;
+  }
+
+  container.innerHTML = guide.steps.map(step => `
     <div class="install-step reveal">
       <div class="install-step-number"></div>
-      <div>
+      <div class="install-step-body">
         <div class="install-step-title">${step.title}</div>
-        <div class="install-step-desc">${step.description}</div>
+        ${step.description ? `<div class="install-step-desc">${step.description}</div>` : ''}
+        ${step.list ? `<ol class="step-list">${step.list.map(item => `<li>${item}</li>`).join('')}</ol>` : ''}
+        ${renderCodeBlock(step.code)}
+        ${step.alternative ? `
+          <div class="step-alternative">
+            ${step.alternative.note ? `<div class="step-alternative-note">${step.alternative.note}</div>` : ''}
+            ${renderCodeBlock(step.alternative.code)}
+          </div>
+        ` : ''}
+        ${step.important ? `<div class="step-important">${step.important}</div>` : ''}
+        ${step.note ? `<div class="step-note">${step.note}</div>` : ''}
       </div>
     </div>
   `).join('');
+}
+
+// Copy-to-clipboard for code blocks. Delegated on document so it keeps
+// working after install-intro/install-steps are re-rendered with live data.
+function initCodeCopyButtons() {
+  document.addEventListener('click', (event) => {
+    const button = event.target.closest('.code-copy-btn');
+    if (!button) return;
+
+    const text = decodeURIComponent(button.dataset.copyText || '');
+    navigator.clipboard.writeText(text).then(() => {
+      const original = button.innerHTML;
+      button.innerHTML = iconMarkup('check');
+      button.classList.add('copied');
+      setTimeout(() => {
+        button.innerHTML = original;
+        button.classList.remove('copied');
+      }, 1500);
+    }).catch(err => console.error('Clipboard copy failed:', err));
+  });
 }
 
 function renderLinks(data) {
@@ -293,6 +427,7 @@ function renderAll(data) {
   renderDevice(data);
   renderRelease(data);
   renderChangelog(data);
+  renderInstallIntro(data);
   renderInstallSteps(data);
   renderLinks(data);
 }
@@ -313,6 +448,7 @@ async function init() {
   renderAll(data);
   initScrollReveal();
   initHeaderScrollState();
+  initCodeCopyButtons();
 
   const remote = data.remote || {};
 
@@ -340,6 +476,7 @@ async function init() {
   renderDevice(data);
   renderRelease(data);
   renderChangelog(data);
+  renderInstallIntro(data);
   renderLinks(data);
 
   // Newly injected changelog/link cards need their own reveal observers.

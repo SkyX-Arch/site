@@ -10,7 +10,8 @@
   "rom": {
     "name": "crDroid",
     "tagline": "Custom Android firmware built for speed, privacy and a clean, distraction-free experience.",
-    "logoImage": "assets/img/logo.svg"
+    "logoImage": "assets/img/logo.svg",
+    "author": { "name": "SkyX-Arch", "url": "https://github.com/SkyX-Arch" }
   },
 
   "device": {
@@ -46,35 +47,73 @@
     }
   ],
 
-  "installSteps": [
-    {
-      "title": "Unlock the bootloader",
-      "description": "Enable Developer Options and USB debugging, then run adb reboot bootloader followed by fastboot flashing unlock. This will wipe your device."
-    },
-    {
-      "title": "Download the build and recovery",
-      "description": "Grab the latest crDroid zip and a matching custom recovery image from the downloads section below."
-    },
-    {
-      "title": "Flash a custom recovery",
-      "description": "Boot into fastboot mode and run fastboot flash recovery recovery.img to install the recovery image."
-    },
-    {
-      "title": "Flash the crDroid build",
-      "description": "Reboot into recovery, select Apply update, and choose the zip you downloaded. Optionally flash GApps in the same session."
-    },
-    {
-      "title": "Reboot into crDroid",
-      "description": "Return to the main recovery menu and select Reboot system now. First boot can take a few minutes — this is normal."
-    }
-  ],
+  "installGuide": {
+    "_comment": "Fully data-driven install guide — works for any ROM/device. 'linkRef' on a requirement points at a key in 'links' below so it always matches the Downloads button; use 'url' instead for a one-off link that doesn't belong in 'links'.",
+
+    "warning": "You are responsible for your own actions and device. Neither the ROM developer nor the author of this guide is responsible for any damage, data loss, or other issues that may occur during the installation process.",
+
+    "requirements": [
+      { "label": "preloader_plato.bin", "url": "https://pixeldrain.com/u/6eYXU83J" },
+      { "label": "Latest crDroid ROM package", "linkRef": "downloads" },
+      { "label": "GApps package", "linkRef": "gapps", "optional": true },
+      { "label": "Latest Android Platform Tools (ADB/Fastboot)", "url": "https://developer.android.com/tools/releases/platform-tools" }
+    ],
+
+    "prerequisites": [
+      "The bootloader must be unlocked.",
+      "The engineering firmware preloader must be flashed before installing the ROM."
+    ],
+
+    "importantNote": "Flashing the engineering firmware preloader is strongly recommended. It provides an additional recovery path and may allow restoring stock firmware without requiring service center assistance if something goes wrong.",
+
+    "steps": [
+      {
+        "title": "Flash the Engineering Firmware Preloader",
+        "description": "Boot the device into Fastboot mode by holding Volume Down + Power until the FASTBOOT screen appears. Flash the preloader:",
+        "code": ["fastboot flash preloader1 preloader_plato.bin", "fastboot flash preloader2 preloader_plato.bin"],
+        "alternative": {
+          "note": "If the commands fail, use the alternative partition names:",
+          "code": ["fastboot flash preloader_raw_a preloader_plato.bin", "fastboot flash preloader_raw_b preloader_plato.bin"]
+        }
+      },
+      {
+        "title": "Flash Boot Images",
+        "code": ["fastboot flash boot boot.img", "fastboot flash vendor_boot vendor_boot.img", "fastboot reboot recovery"],
+        "note": "The device should now boot into Recovery."
+      },
+      {
+        "title": "Format Data",
+        "description": "Inside Recovery:",
+        "list": ["Select Wipe all data", "Confirm the operation"],
+        "important": "Formatting data is required when installing the ROM."
+      },
+      {
+        "title": "Flash crDroid",
+        "description": "From your computer:",
+        "code": ["adb sideload <crDroid>.zip"],
+        "note": "If Recovery prompts for a reboot at approximately 47%, confirm it."
+      },
+      {
+        "title": "Flash GApps (Optional)",
+        "description": "If you require Google services, flash the GApps package after installing the ROM:",
+        "code": ["adb sideload <gapps-package>.zip"],
+        "note": "No additional packages are required."
+      },
+      {
+        "title": "Reboot",
+        "description": "Once installation is complete:",
+        "code": ["Reboot System"],
+        "note": "Complete the Android setup process and enjoy crDroid."
+      }
+    ]
+  },
 
   "links": {
     "github": "https://github.com/SkyX-Arch/crdroid-ota",
     "downloads": "https://github.com/SkyX-Arch/crdroid-ota/releases/latest",
     "releases": "https://github.com/SkyX-Arch/crdroid-ota/releases",
     "telegram": "https://t.me/SkyXArch",
-    "gapps": "",
+    "gapps": "https://sourceforge.net/projects/nikgapps/files/Elite-Releases/crdroid-official/Android-16/",
     "firmware": ""
   }
 }
