@@ -56,11 +56,13 @@
     "codename": "plato",
     "screenshots": [
       { "src": "assets/img/screenshot-placeholder.svg", "caption": "Home screen" },
-      { "src": "assets/img/screenshot-placeholder-2.svg", "caption": "Quick settings" },
-      { "src": "assets/img/screenshot-placeholder-3.svg", "caption": "App drawer" }
+      { "src": "assets/img/screenshot-placeholder-2.svg", "caption": "App drawer" },
+      { "src": "assets/img/screenshot-placeholder-3.svg", "caption": "Android version" },
+      { "src": "assets/img/screenshot-placeholder-4.svg", "caption": "Updater" },
+      { "src": "assets/img/screenshot-placeholder-5.svg", "caption": "Crdroid Settings" }
     ],
     "specs": [
-      { "icon": "cpu", "label": "Chipset", "value": "MediaTek Dimensity 8200 Ultra" },
+      { "icon": "cpu", "label": "Chipset", "value": "MediaTek Dimensity 8100 Ultra" },
       { "icon": "display", "label": "Display", "value": "6.67\" AMOLED, 120Hz" },
       { "icon": "battery", "label": "Battery", "value": "5000 mAh, 120W wired" },
       { "icon": "memory", "label": "Memory", "value": "8/12GB RAM / 128–256GB storage" },
