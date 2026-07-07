@@ -1,0 +1,24 @@
+<!-- REPLACE THIS FILE with a real screenshot (e.g. app drawer). -->
+<svg width="360" height="780" viewBox="0 0 360 780" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="bgGrad3" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#211F26"/>
+      <stop offset="100%" stop-color="#141218"/>
+    </linearGradient>
+  </defs>
+  <rect width="360" height="780" fill="url(#bgGrad3)"/>
+  <rect x="40" y="90" width="280" height="48" rx="24" fill="#2B2930"/>
+  <text x="180" y="119" text-anchor="middle" font-family="Inter, sans-serif" font-size="13" fill="#938F99">Search apps</text>
+  <g fill="#CAC4D0">
+    <circle cx="80" cy="200" r="28" fill="#D0BCFF"/>
+    <circle cx="180" cy="200" r="28" fill="#CCC2DC"/>
+    <circle cx="280" cy="200" r="28" fill="#EFB8C8"/>
+    <circle cx="80" cy="290" r="28" fill="#2B2930"/>
+    <circle cx="180" cy="290" r="28" fill="#2B2930"/>
+    <circle cx="280" cy="290" r="28" fill="#2B2930"/>
+    <circle cx="80" cy="380" r="28" fill="#2B2930"/>
+    <circle cx="180" cy="380" r="28" fill="#2B2930"/>
+    <circle cx="280" cy="380" r="28" fill="#2B2930"/>
+  </g>
+  <text x="180" y="740" text-anchor="middle" font-family="Inter, sans-serif" font-size="11" fill="#605D67">Replace with a real screenshot</text>
+</svg>

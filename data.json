@@ -1,164 +1,255 @@
 {
-  "_comment": "Editorial content lives here. Release version, date, download link, telegram, changelog etc. are fetched live at runtime from the URLs in 'remote' below and will override the matching fields here if the fetch succeeds. The fields under latestRelease/changelog/links act only as an offline fallback (e.g. if the remote source is briefly unreachable).",
+  "_comment": "This site can host more than one ROM/device combination — each one is a 'profile' below, and a switcher in the header lets visitors flip between them (also shareable/bookmarkable via a ?rom=<id> URL param). Add a new profile by copying one and giving it a unique 'id'. Everything inside a profile — rom, device, theme, installGuide, links, remote — works exactly like the single-profile data.json from before.",
 
-  "remote": {
-    "_comment": "Live data sources for this device. Point releaseJsonUrl/changelogUrl at your own ROM's feed to switch devices.",
-    "releaseJsonUrl": "https://skyx-arch.github.io/crdroid-ota/plato.json",
-    "changelogUrl": "https://skyx-arch.github.io/crdroid-ota/plato_changelog.txt",
+  "defaultProfileId": "crdroid-plato",
 
-    "releaseJsonMap": {
-      "_comment": "Every ROM's OTA JSON names its fields a little differently — this maps THIS ROM's field names onto the page's internal fields, so a different ROM can be supported by editing this block instead of assets/js/main.js.",
-      "listPath": "response",
-      "entryIndex": 0,
-      "fields": {
-        "version": "version",
-        "device": "device",
-        "filename": "filename",
-        "download": "download",
-        "date": "timestamp",
-        "buildType": "buildtype",
-        "maintainer": "maintainer",
-        "size": "size",
-        "telegram": "telegram",
-        "gapps": "gapps",
-        "firmware": "firmware"
-      },
-      "dateFormat": "unix_seconds",
-      "filenamePatternComment": "Optional. Named-group regex to pull the device codename / Android base version out of the build filename, e.g. crDroidAndroid-16.0-20260705-plato-v12.11.zip. Leave unset to keep device.codename / latestRelease.androidBase as configured below instead.",
-      "filenamePattern": "^crDroidAndroid-(?<androidBase>[\\d.]+)-\\d{8}-(?<codename>[^-]+)-v"
-    },
-
-    "changelogMap": {
-      "_comment": "Changelog text formats vary between ROMs too (bullet character, date-line format). Defaults below match a 'YYYY-MM-DD' date line followed by '-' bulleted changes, with '----'/'====' style underlines auto-ignored.",
-      "dateLinePattern": "^\\d{4}-\\d{2}-\\d{2}$",
-      "bulletPrefixes": ["-", "*"]
-    }
+  "hub": {
+    "_comment": "Identity for the whole collection/maintainer — shown in the nav brand (all views) and on the all-builds grid (only relevant when there's more than one profile below).",
+    "title": "SkyX-Arch Builds",
+    "subtitle": "All custom ROM builds maintained by SkyX-Arch — pick a device below.",
+    "logoImage": "assets/img/logo.svg"
   },
 
-  "theme": {
-    "_comment": "Optional. Override the site's Material You accent colors to match this ROM's branding — everything else (gradients, badges, hover states, button backgrounds) derives from these automatically. Leave a value out to keep the default. onPrimary (filled-button text color) is auto-computed for contrast if omitted.",
-    "primary": "#D0BCFF",
-    "secondary": "#CCC2DC",
-    "tertiary": "#EFB8C8",
-    "onPrimary": null,
-    "primaryContainer": null
-  },
-
-  "rom": {
-    "name": "crDroid",
-    "tagline": "Custom Android firmware built for speed, privacy and a clean, distraction-free experience.",
-    "logoImage": "assets/img/logo.svg",
-    "author": { "name": "SkyX-Arch", "url": "https://github.com/SkyX-Arch" }
-  },
-
-  "device": {
-    "name": "Xiaomi 12T",
-    "codename": "plato",
-    "screenshots": [
-      { "src": "assets/img/screenshot-placeholder.svg", "caption": "Home screen" },
-      { "src": "assets/img/screenshot-placeholder-2.1.svg", "caption": "App drawer" },
-      { "src": "assets/img/screenshot-placeholder-3.1.svg", "caption": "Android version" },
-      { "src": "assets/img/screenshot-placeholder-4.svg", "caption": "Updater" },
-      { "src": "assets/img/screenshot-placeholder-5.svg", "caption": "Crdroid Settings" }
-    ],
-    "specs": [
-      { "icon": "cpu", "label": "Chipset", "value": "MediaTek Dimensity 8100 Ultra" },
-      { "icon": "display", "label": "Display", "value": "6.67\" AMOLED, 120Hz" },
-      { "icon": "battery", "label": "Battery", "value": "5000 mAh, 120W wired" },
-      { "icon": "memory", "label": "Memory", "value": "8/12GB RAM / 128–256GB storage" },
-      { "icon": "camera", "label": "Camera", "value": "108MP main + 8MP ultrawide + 2MP macro" },
-      { "icon": "android", "label": "Base", "value": "Android 16 (crDroid)" }
-    ]
-  },
-
-  "latestRelease": {
-    "version": "12.11",
-    "codename": "Unofficial",
-    "date": "2026-07-05",
-    "androidBase": "Android 16",
-    "summary": "The newest crDroid build for plato. See the full changelog below for everything that changed."
-  },
-
-  "changelog": [
+  "profiles": [
     {
-      "date": "2026-07-05",
-      "changes": [
-        "Improved refresh rate behavior for smoother animations and scrolling",
-        "Enabled advanced ZRAM and UFS performance optimizations for better multitasking",
-        "Enabled Zero Shutter Lag (ZSL) support for faster camera capture"
-      ]
-    }
-  ],
+      "id": "crdroid-plato",
+      "label": "crDroid — Xiaomi 12T",
 
-  "installGuide": {
-    "_comment": "Fully data-driven install guide — works for any ROM/device. 'linkRef' on a requirement points at a key in 'links' below so it always matches the Downloads button; use 'url' instead for a one-off link that doesn't belong in 'links'.",
+      "remote": {
+        "_comment": "Live data sources for this device. Point releaseJsonUrl/changelogUrl at your own ROM's feed to switch devices.",
+        "releaseJsonUrl": "https://skyx-arch.github.io/crdroid-ota/plato.json",
+        "changelogUrl": "https://skyx-arch.github.io/crdroid-ota/plato_changelog.txt",
 
-    "otaNote": "Already running a previous build of this ROM? You don't need to flash from scratch — just download the new build, install it through the ROM's built-in OTA/updater app (or by sideloading it in Recovery), and reboot. The full steps below are only for a clean install or coming from stock/another ROM.",
+        "releaseJsonMap": {
+          "_comment": "Every ROM's OTA JSON names its fields a little differently — this maps THIS ROM's field names onto the page's internal fields, so a different ROM can be supported by editing this block instead of assets/js/main.js.",
+          "listPath": "response",
+          "entryIndex": 0,
+          "fields": {
+            "version": "version",
+            "device": "device",
+            "filename": "filename",
+            "download": "download",
+            "date": "timestamp",
+            "buildType": "buildtype",
+            "maintainer": "maintainer",
+            "size": "size",
+            "telegram": "telegram",
+            "gapps": "gapps",
+            "firmware": "firmware"
+          },
+          "dateFormat": "unix_seconds",
+          "filenamePatternComment": "Optional. Named-group regex to pull the device codename / Android base version out of the build filename, e.g. crDroidAndroid-16.0-20260705-plato-v12.11.zip. Leave unset to keep device.codename / latestRelease.androidBase as configured below instead.",
+          "filenamePattern": "^crDroidAndroid-(?<androidBase>[\\d.]+)-\\d{8}-(?<codename>[^-]+)-v"
+        },
 
-    "warning": "You are responsible for your own actions and device. Neither the ROM developer nor the author of this guide is responsible for any damage, data loss, or other issues that may occur during the installation process.",
-
-    "requirements": [
-      { "label": "preloader_plato.bin", "url": "https://pixeldrain.com/u/6eYXU83J" },
-      { "label": "Latest crDroid ROM package", "linkRef": "downloads" },
-      { "label": "GApps package", "linkRef": "gapps", "optional": true },
-      { "label": "Latest Android Platform Tools (ADB/Fastboot)", "url": "https://developer.android.com/tools/releases/platform-tools" }
-    ],
-
-    "prerequisites": [
-      "The bootloader must be unlocked.",
-      "The engineering firmware preloader must be flashed before installing the ROM."
-    ],
-
-    "importantNote": "Flashing the engineering firmware preloader is strongly recommended. It provides an additional recovery path and may allow restoring stock firmware without requiring service center assistance if something goes wrong.",
-
-    "steps": [
-      {
-        "title": "Flash the Engineering Firmware Preloader",
-        "description": "Boot the device into Fastboot mode by holding Volume Down + Power until the FASTBOOT screen appears. Flash the preloader:",
-        "code": ["fastboot flash preloader1 preloader_plato.bin", "fastboot flash preloader2 preloader_plato.bin"],
-        "alternative": {
-          "note": "If the commands fail, use the alternative partition names:",
-          "code": ["fastboot flash preloader_raw_a preloader_plato.bin", "fastboot flash preloader_raw_b preloader_plato.bin"]
+        "changelogMap": {
+          "_comment": "Changelog text formats vary between ROMs too (bullet character, date-line format). Defaults below match a 'YYYY-MM-DD' date line followed by '-' bulleted changes, with '----'/'====' style underlines auto-ignored.",
+          "dateLinePattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "bulletPrefixes": ["-", "*"]
         }
       },
-      {
-        "title": "Flash Boot Images",
-        "code": ["fastboot flash boot boot.img", "fastboot flash vendor_boot vendor_boot.img", "fastboot reboot recovery"],
-        "note": "The device should now boot into Recovery."
-      },
-      {
-        "title": "Format Data",
-        "description": "Inside Recovery:",
-        "list": ["Select Wipe all data", "Confirm the operation"],
-        "important": "Formatting data is required when installing the ROM."
-      },
-      {
-        "title": "Flash crDroid",
-        "description": "From your computer:",
-        "code": ["adb sideload <crDroid>.zip"],
-        "note": "If Recovery prompts for a reboot at approximately 47%, confirm it."
-      },
-      {
-        "title": "Flash GApps (Optional)",
-        "description": "If you require Google services, flash the GApps package after installing the ROM:",
-        "code": ["adb sideload <gapps-package>.zip"],
-        "note": "No additional packages are required."
-      },
-      {
-        "title": "Reboot",
-        "description": "Once installation is complete:",
-        "code": ["Reboot System"],
-        "note": "Complete the Android setup process and enjoy crDroid."
-      }
-    ]
-  },
 
-  "links": {
-    "github": "https://github.com/SkyX-Arch/crdroid-ota",
-    "downloads": "https://github.com/SkyX-Arch/crdroid-ota/releases/latest",
-    "releases": "https://github.com/SkyX-Arch/crdroid-ota/releases",
-    "telegram": "https://t.me/SkyXArch",
-    "gapps": "https://sourceforge.net/projects/nikgapps/files/Elite-Releases/crdroid-official/Android-16/",
-    "firmware": ""
-  }
+      "theme": {
+        "_comment": "Optional. Override the site's Material You accent colors to match this ROM's branding — everything else (gradients, badges, hover states, button backgrounds) derives from these automatically. Leave a value out to keep the default. onPrimary (filled-button text color) is auto-computed for contrast if omitted.",
+        "primary": "#D0BCFF",
+        "secondary": "#CCC2DC",
+        "tertiary": "#EFB8C8",
+        "onPrimary": null,
+        "primaryContainer": null
+      },
+
+      "rom": {
+        "name": "crDroid",
+        "tagline": "Custom Android firmware built for speed, privacy and a clean, distraction-free experience.",
+        "logoImage": "assets/img/logo.svg",
+        "author": { "name": "SkyX-Arch", "url": "https://github.com/SkyX-Arch" }
+      },
+
+      "device": {
+        "name": "Xiaomi 12T",
+        "codename": "plato",
+        "screenshots": [
+          { "src": "assets/img/screenshot-placeholder.svg", "caption": "Home screen" },
+          { "src": "assets/img/screenshot-placeholder-2.svg", "caption": "Quick settings" },
+          { "src": "assets/img/screenshot-placeholder-3.svg", "caption": "App drawer" }
+        ],
+        "specs": [
+          { "icon": "cpu", "label": "Chipset", "value": "MediaTek Dimensity 8200 Ultra" },
+          { "icon": "display", "label": "Display", "value": "6.67\" AMOLED, 120Hz" },
+          { "icon": "battery", "label": "Battery", "value": "5000 mAh, 120W wired" },
+          { "icon": "memory", "label": "Memory", "value": "8/12GB RAM / 128–256GB storage" },
+          { "icon": "camera", "label": "Camera", "value": "108MP main + 8MP ultrawide + 2MP macro" },
+          { "icon": "android", "label": "Base", "value": "Android 16 (crDroid)" }
+        ]
+      },
+
+      "latestRelease": {
+        "version": "12.11",
+        "codename": "Unofficial",
+        "date": "2026-07-05",
+        "androidBase": "Android 16",
+        "summary": "The newest crDroid build for plato. See the full changelog below for everything that changed."
+      },
+
+      "changelog": [
+        {
+          "date": "2026-07-05",
+          "changes": [
+            "Improved refresh rate behavior for smoother animations and scrolling",
+            "Enabled advanced ZRAM and UFS performance optimizations for better multitasking",
+            "Enabled Zero Shutter Lag (ZSL) support for faster camera capture"
+          ]
+        }
+      ],
+
+      "installGuide": {
+        "_comment": "Fully data-driven install guide — works for any ROM/device. 'linkRef' on a requirement points at a key in 'links' below so it always matches the Downloads button; use 'url' instead for a one-off link that doesn't belong in 'links'.",
+
+        "otaNote": "Already running a previous build of this ROM? You don't need to flash from scratch — just download the new build, install it through the ROM's built-in OTA/updater app (or by sideloading it in Recovery), and reboot. The full steps below are only for a clean install or coming from stock/another ROM.",
+
+        "warning": "You are responsible for your own actions and device. Neither the ROM developer nor the author of this guide is responsible for any damage, data loss, or other issues that may occur during the installation process.",
+
+        "requirements": [
+          { "label": "preloader_plato.bin", "url": "https://pixeldrain.com/u/6eYXU83J" },
+          { "label": "Latest crDroid ROM package", "linkRef": "downloads" },
+          { "label": "GApps package", "linkRef": "gapps", "optional": true },
+          { "label": "Latest Android Platform Tools (ADB/Fastboot)", "url": "https://developer.android.com/tools/releases/platform-tools" }
+        ],
+
+        "prerequisites": [
+          "The bootloader must be unlocked.",
+          "The engineering firmware preloader must be flashed before installing the ROM."
+        ],
+
+        "importantNote": "Flashing the engineering firmware preloader is strongly recommended. It provides an additional recovery path and may allow restoring stock firmware without requiring service center assistance if something goes wrong.",
+
+        "steps": [
+          {
+            "title": "Flash the Engineering Firmware Preloader",
+            "description": "Boot the device into Fastboot mode by holding Volume Down + Power until the FASTBOOT screen appears. Flash the preloader:",
+            "code": ["fastboot flash preloader1 preloader_plato.bin", "fastboot flash preloader2 preloader_plato.bin"],
+            "alternative": {
+              "note": "If the commands fail, use the alternative partition names:",
+              "code": ["fastboot flash preloader_raw_a preloader_plato.bin", "fastboot flash preloader_raw_b preloader_plato.bin"]
+            }
+          },
+          {
+            "title": "Flash Boot Images",
+            "code": ["fastboot flash boot boot.img", "fastboot flash vendor_boot vendor_boot.img", "fastboot reboot recovery"],
+            "note": "The device should now boot into Recovery."
+          },
+          {
+            "title": "Format Data",
+            "description": "Inside Recovery:",
+            "list": ["Select Wipe all data", "Confirm the operation"],
+            "important": "Formatting data is required when installing the ROM."
+          },
+          {
+            "title": "Flash crDroid",
+            "description": "From your computer:",
+            "code": ["adb sideload <crDroid>.zip"],
+            "note": "If Recovery prompts for a reboot at approximately 47%, confirm it."
+          },
+          {
+            "title": "Flash GApps (Optional)",
+            "description": "If you require Google services, flash the GApps package after installing the ROM:",
+            "code": ["adb sideload <gapps-package>.zip"],
+            "note": "No additional packages are required."
+          },
+          {
+            "title": "Reboot",
+            "description": "Once installation is complete:",
+            "code": ["Reboot System"],
+            "note": "Complete the Android setup process and enjoy crDroid."
+          }
+        ]
+      },
+
+      "links": {
+        "github": "https://github.com/SkyX-Arch/crdroid-ota",
+        "downloads": "https://github.com/SkyX-Arch/crdroid-ota/releases/latest",
+        "releases": "https://github.com/SkyX-Arch/crdroid-ota/releases",
+        "telegram": "https://t.me/SkyXArch",
+        "gapps": "https://sourceforge.net/projects/nikgapps/files/Elite-Releases/crdroid-official/Android-16/",
+        "firmware": ""
+      }
+    },
+
+    {
+      "_comment": "EXAMPLE STUB — not real data. Shows the shape a second profile (e.g. AxionOS) needs; fill in real values, a real remote feed, real specs/links, and either remove this comment-marked example or replace it entirely once you have real AxionOS data.",
+      "id": "axionos-example",
+      "label": "AxionOS — Example Device (edit me)",
+
+      "remote": {
+        "releaseJsonUrl": "",
+        "changelogUrl": ""
+      },
+
+      "theme": {
+        "primary": "#B7D8A8",
+        "secondary": "#C2CCB7",
+        "tertiary": "#A8D8C8"
+      },
+
+      "rom": {
+        "name": "AxionOS",
+        "tagline": "Replace with AxionOS's real tagline once this profile is configured.",
+        "logoImage": "assets/img/logo.svg",
+        "author": { "name": "Your maintainer name", "url": "https://github.com/your-org" }
+      },
+
+      "device": {
+        "name": "Example Device",
+        "codename": "example",
+        "screenshots": [
+          { "src": "assets/img/screenshot-placeholder.svg", "caption": "Home screen" }
+        ],
+        "specs": [
+          { "icon": "cpu", "label": "Chipset", "value": "Fill in" },
+          { "icon": "display", "label": "Display", "value": "Fill in" },
+          { "icon": "battery", "label": "Battery", "value": "Fill in" },
+          { "icon": "memory", "label": "Memory", "value": "Fill in" },
+          { "icon": "camera", "label": "Camera", "value": "Fill in" },
+          { "icon": "android", "label": "Base", "value": "Fill in" }
+        ]
+      },
+
+      "latestRelease": {
+        "version": "0.0",
+        "codename": "Unofficial",
+        "date": "2026-01-01",
+        "androidBase": "Android 16",
+        "summary": "This is placeholder data for the AxionOS example profile — configure remote.releaseJsonUrl or edit this directly."
+      },
+
+      "changelog": [
+        {
+          "date": "2026-01-01",
+          "changes": ["This is placeholder changelog data — configure remote.changelogUrl or edit this directly."]
+        }
+      ],
+
+      "installGuide": {
+        "warning": "You are responsible for your own actions and device. Neither the ROM developer nor the author of this guide is responsible for any damage, data loss, or other issues that may occur during the installation process.",
+        "requirements": [
+          { "label": "Latest AxionOS ROM package", "linkRef": "downloads" },
+          { "label": "Latest Android Platform Tools (ADB/Fastboot)", "url": "https://developer.android.com/tools/releases/platform-tools" }
+        ],
+        "prerequisites": ["The bootloader must be unlocked."],
+        "steps": [
+          {
+            "title": "Fill in this ROM's real install steps",
+            "description": "Replace this placeholder step with the actual flashing procedure for AxionOS on this device."
+          }
+        ]
+      },
+
+      "links": {
+        "github": "",
+        "downloads": "",
+        "releases": "",
+        "telegram": ""
+      }
+    }
+  ]
 }

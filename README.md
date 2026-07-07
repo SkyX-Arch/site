@@ -122,30 +122,44 @@ build that a normal OTA update (download + install through the updater +
 reboot) is enough — the full flash-from-scratch steps below it are only
 for a clean install. Edit or remove it like any other `installGuide` field.
 
-## Reusing this template for another ROM
+## Multiple ROMs on one site (the hub)
 
-`index.html`, `assets/js/main.js` and `assets/css/style.css` don't contain
-any ROM- or device-specific text anymore — every name, tagline, spec, link,
-install step and color comes from `data.json` (plus the two live-feed URLs
-in `remote`). To stand up a page for a second ROM (e.g. AxionOS) instead of
-crDroid:
+This site can host more than one ROM/device combination at once — useful if
+you maintain builds for several devices (or several ROMs) and want one page
+listing all of them, e.g. "all builds by SkyX-Arch."
 
-1. Copy this whole project folder (or fork the repo) — each deployment is
-   one ROM/device combination, since this is a static site with no backend.
-2. Edit `data.json`: `rom`, `device`, `theme`, `installGuide`, `links`, and
-   `remote` (release JSON URL, changelog URL, and `releaseJsonMap` /
-   `changelogMap` if the new ROM's feed uses different field names or
-   changelog formatting — see below).
-3. Swap `assets/img/logo.svg` and the `screenshot-placeholder*.svg` files
-   for the new ROM's branding and screenshots.
-4. That's it — no HTML or JS edits needed for a rebrand. (`installGuide`'s
-   step text will still need rewriting either way, since flashing commands
-   genuinely differ between ROMs/devices — but that's a `data.json` edit
-   too, just one that reflects real differences rather than boilerplate.)
+`data.json`'s `profiles` array holds one entry per ROM/device — each entry
+has the exact same shape as everything described above (`rom`, `device`,
+`theme`, `latestRelease`, `changelog`, `installGuide`, `links`, `remote`).
+`data.json`'s top-level `hub` block (`title`, `subtitle`, `logoImage`) is the
+identity for the *collection* — it's what shows in the nav bar and on the
+grid, independent of any single ROM's branding.
 
-If you want multiple ROMs live on the *same* page (a device/ROM switcher)
-rather than one deployment per ROM, that's a bigger feature this template
-doesn't include yet — ask if you'd like it added.
+**How it behaves:**
+- With **one** profile, the hub is skipped entirely — visitors land directly
+  on that ROM's page, exactly like before. Nothing changes for a
+  single-ROM deployment.
+- With **more than one** profile, visiting the site's root shows a grid of
+  tiles (logo, ROM name, device, current version) — the hub/home view.
+  Clicking a tile opens that ROM's full page (hero, specs, release,
+  changelog, install guide, links), with a **"← All builds"** link in the
+  header to return to the grid.
+- Opening a specific ROM updates the URL to `?rom=<profile-id>`, so a link
+  straight to one ROM's page is shareable/bookmarkable, and the browser's
+  back/forward buttons step correctly between the grid and each ROM.
+- `defaultProfileId` just controls which tile appears first in the grid —
+  it doesn't auto-open a ROM; the hub is always what a bare visit (no
+  `?rom=`) shows once there's more than one profile.
+
+**To add a second ROM** (e.g. AxionOS alongside crDroid): copy an existing
+entry in the `profiles` array, give it a unique `id`, and fill in its `rom`,
+`device`, `theme`, `installGuide`, `links` and `remote` — no HTML/JS/CSS
+edits needed. `data.json` ships with a clearly-marked `axionos-example` stub
+showing the shape; replace it with real data or delete it.
+
+**Single-ROM deployments** don't need any of this — a `data.json` with a
+single profile (or the old pre-hub flat shape, still supported for backward
+compatibility) works exactly as it always did.
 
 ## Editing content
 
@@ -214,13 +228,6 @@ pixel size or aspect ratio won't stretch or distort it — it'll just be
 letterboxed inside the same box. For best results keep replacement art
 roughly square. The favicon link also sets `sizes="any"`, which is the
 standard fix for SVG favicons rendering at the wrong size in some browsers.
-
-## Theme / colors
-
-All colors, radii and motion timing are CSS variables at the top of
-`assets/css/style.css` (`:root { ... }`). To re-theme the whole site, change
-`--color-primary`, `--color-tertiary` and the surface colors — everything
-else derives from them.
 
 ## Running locally
 

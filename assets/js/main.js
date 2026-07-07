@@ -281,6 +281,23 @@ function contrastTextFor(hex) {
   return relativeLuminance(hex) > 0.55 ? '#1B1523' : '#FFFFFF';
 }
 
+const THEMEABLE_CSS_PROPERTIES = [
+  '--color-primary',
+  '--color-secondary',
+  '--color-tertiary',
+  '--color-on-primary',
+  '--color-primary-container'
+];
+
+// Clears any inline theme overrides from a previously active profile so the
+// stylesheet's defaults (or the next profile's own theme) take over cleanly —
+// without this, switching from a themed profile to one with no/partial
+// theme config would leave the old profile's colors stuck via inline style.
+function resetTheme() {
+  const root = document.documentElement.style;
+  THEMEABLE_CSS_PROPERTIES.forEach(prop => root.removeProperty(prop));
+}
+
 function applyTheme(theme) {
   if (!theme) return;
   const root = document.documentElement.style;
@@ -303,7 +320,6 @@ function renderHero(data) {
   const metaDescription = document.getElementById('meta-description');
   if (metaDescription) metaDescription.setAttribute('content', rom.tagline);
 
-  document.getElementById('nav-rom-name').textContent = rom.name;
   document.getElementById('hero-title').textContent = rom.name;
   document.getElementById('hero-tagline').textContent = rom.tagline;
   document.getElementById('footer-rom-name').textContent = rom.name;
@@ -652,60 +668,250 @@ function renderAll(data) {
   renderLinks(data);
 }
 
-async function init() {
-  document.getElementById('footer-year').textContent = new Date().getFullYear();
+// -----------------------------------------------------------------------
+// Hub / detail navigation — lets one page host multiple ROM/device profiles
+// (e.g. crDroid on one device and AxionOS on another), presented as a grid
+// of tiles on a "hub" home view. Picking a tile opens that profile's full
+// page (the existing hero/device/release/changelog/install/links sections);
+// a back link returns to the grid. Each profile is a full data.json-shaped
+// object — see data.json's "profiles" array. The open profile is reflected
+// in a ?rom=<id> URL param so a specific ROM's page is shareable/bookmarkable
+// and the browser's back/forward buttons work as expected.
+// -----------------------------------------------------------------------
+let currentSwitchToken = 0; // guards against a slow/stale fetch overwriting a newer render
 
-  let data;
-  try {
-    data = await loadJson('data.json');
-  } catch (err) {
-    console.error('Failed to load data.json:', err);
-    return;
+// Accepts either the new { profiles: [...] } shape or a legacy single-profile
+// data.json (everything at the top level, no "profiles" array) for backward
+// compatibility with sites that haven't migrated yet.
+function normalizeProfiles(data) {
+  if (Array.isArray(data.profiles) && data.profiles.length > 0) {
+    return { profiles: data.profiles, defaultProfileId: data.defaultProfileId, hub: data.hub };
   }
+  const fallbackProfile = { id: 'default', label: (data.rom && data.rom.name) || 'ROM', ...data };
+  return { profiles: [fallbackProfile], defaultProfileId: 'default', hub: data.hub };
+}
 
-  // Theme colors apply before first render so nothing flashes the default palette.
-  applyTheme(data.theme);
+function getProfileById(profiles, id) {
+  return profiles.find(profile => profile.id === id);
+}
 
-  // Render immediately with the local/editorial data so the page is never empty,
-  // then overlay live data from the remote sources as soon as it arrives.
-  renderAll(data);
-  initScrollReveal();
-  initHeaderScrollState();
-  initCodeCopyButtons();
-  initLightbox();
+function renderHub(profiles, hub = {}) {
+  document.getElementById('hub-heading').textContent = hub.title || 'All builds';
+  document.getElementById('hub-subheading').textContent = hub.subtitle || '';
 
-  const remote = data.remote || {};
+  document.getElementById('nav-brand-title').textContent = hub.title || 'All builds';
+  if (hub.logoImage) document.getElementById('nav-brand-logo').src = hub.logoImage;
+
+  const grid = document.getElementById('hub-grid');
+  grid.innerHTML = profiles.map(profile => {
+    const rom = profile.rom || {};
+    const device = profile.device || {};
+    const release = profile.latestRelease || {};
+    const accentStyle = (profile.theme && profile.theme.primary)
+      ? `--hub-card-accent: ${profile.theme.primary};${profile.theme.primaryContainer ? ` --hub-card-accent-container: ${profile.theme.primaryContainer};` : ''}`
+      : '';
+
+    return `
+      <div class="hub-card reveal" role="button" tabindex="0" data-profile-id="${profile.id}" style="${accentStyle}">
+        <div class="hub-card-logo"><img src="${rom.logoImage || 'assets/img/logo.svg'}" alt=""></div>
+        <div>
+          <div class="hub-card-name">${rom.name || profile.label || profile.id}</div>
+          <div class="hub-card-device">${device.name || ''}${device.codename ? ` (${device.codename})` : ''}</div>
+        </div>
+        <div class="hub-card-meta">
+          ${release.version ? `<span>v${release.version}</span>` : ''}
+          ${release.androidBase ? `<span>${release.androidBase}</span>` : ''}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function showHubView() {
+  document.getElementById('hub-view').hidden = false;
+  document.getElementById('detail-view').hidden = true;
+  document.getElementById('nav-back-link').hidden = true;
+  document.getElementById('nav-links').hidden = true;
+  document.getElementById('nav-cta').hidden = true;
+  window.scrollTo(0, 0);
+}
+
+function showDetailView(hasHub) {
+  document.getElementById('hub-view').hidden = true;
+  document.getElementById('detail-view').hidden = false;
+  document.getElementById('nav-back-link').hidden = !hasHub;
+  document.getElementById('nav-links').hidden = false;
+  document.getElementById('nav-cta').hidden = false;
+  window.scrollTo(0, 0);
+}
+
+// Fetches and overlays a profile's live release/changelog data, guarded by
+// a token so a slow response from a profile the visitor has since navigated
+// away from can't clobber a newer render.
+async function loadRemoteDataForProfile(profile, token) {
+  const remote = profile.remote || {};
 
   if (remote.releaseJsonUrl) {
     try {
       const releaseFeed = await loadJson(remote.releaseJsonUrl);
+      if (token !== currentSwitchToken) return;
       const releaseMap = remote.releaseJsonMap || {};
-      applyRemoteRelease(data, extractReleaseEntry(releaseFeed, releaseMap), releaseMap);
+      applyRemoteRelease(profile, extractReleaseEntry(releaseFeed, releaseMap), releaseMap);
     } catch (err) {
       console.error('Failed to load live release data, keeping local fallback:', err);
     }
   }
 
+  if (token !== currentSwitchToken) return;
+
   if (remote.changelogUrl) {
     try {
       const changelogText = await loadText(remote.changelogUrl);
-      applyRemoteChangelog(data, parseChangelogText(changelogText, remote.changelogMap || {}));
+      if (token !== currentSwitchToken) return;
+      applyRemoteChangelog(profile, parseChangelogText(changelogText, remote.changelogMap || {}));
     } catch (err) {
       console.error('Failed to load live changelog, keeping local fallback:', err);
     }
   }
 
-  // Re-render with whatever live data made it through; reveal state on
-  // already-visible elements is preserved since matching IDs are reused.
-  renderHero(data);
-  renderDevice(data);
-  renderRelease(data);
-  renderChangelog(data);
-  renderInstallIntro(data);
-  renderLinks(data);
+  if (token !== currentSwitchToken) return;
 
-  // Newly injected changelog/link cards need their own reveal observers.
+  renderHero(profile);
+  renderDevice(profile);
+  renderRelease(profile);
+  renderChangelog(profile);
+  renderInstallIntro(profile);
+  renderLinks(profile);
+  initScrollReveal(); // newly injected changelog/link cards need their own reveal observers
+}
+
+// historyMode controls how the URL reflects the navigation: 'replace'
+// (initial load), 'push' (the visitor clicked something, so back/forward
+// can step through it), or 'none' (already handled, e.g. a popstate event).
+function updateUrlParam(paramValue, historyMode) {
+  if (historyMode === 'none') return;
+  const url = new URL(window.location.href);
+  if (paramValue) {
+    url.searchParams.set('rom', paramValue);
+  } else {
+    url.searchParams.delete('rom');
+  }
+  if (historyMode === 'push') {
+    window.history.pushState({ rom: paramValue || null }, '', url);
+  } else {
+    window.history.replaceState({ rom: paramValue || null }, '', url);
+  }
+}
+
+function goToHub(profiles, historyMode) {
+  if (profiles.length <= 1) return; // nothing to go back to in single-profile mode
+  currentSwitchToken++; // invalidate any in-flight fetch for the profile being left
+  closeLightbox();
+  updateUrlParam(null, historyMode);
+  resetTheme();
+  showHubView();
+}
+
+async function goToProfile(profiles, id, historyMode) {
+  const profile = getProfileById(profiles, id);
+  if (!profile) return;
+
+  const token = ++currentSwitchToken;
+  const hasHub = profiles.length > 1;
+
+  closeLightbox();
+  updateUrlParam(profile.id, historyMode);
+
+  resetTheme();
+  applyTheme(profile.theme);
+  renderAll(profile);
+  showDetailView(hasHub);
   initScrollReveal();
+
+  await loadRemoteDataForProfile(profile, token);
+}
+
+// Reflects whatever the URL currently says (used for popstate — never
+// pushes/replaces history itself, since the browser already navigated it).
+function restoreFromUrl(profiles) {
+  const fromUrl = new URLSearchParams(window.location.search).get('rom');
+  if (fromUrl && getProfileById(profiles, fromUrl)) {
+    goToProfile(profiles, fromUrl, 'none');
+  } else if (profiles.length > 1) {
+    currentSwitchToken++;
+    closeLightbox();
+    resetTheme();
+    showHubView();
+  } else {
+    goToProfile(profiles, profiles[0].id, 'none');
+  }
+}
+
+function initHubNavigation(profiles) {
+  document.getElementById('nav-brand-link').addEventListener('click', (event) => {
+    event.preventDefault();
+    goToHub(profiles, 'push');
+  });
+
+  document.getElementById('nav-back-link').addEventListener('click', (event) => {
+    event.preventDefault();
+    goToHub(profiles, 'push');
+  });
+
+  const grid = document.getElementById('hub-grid');
+  grid.addEventListener('click', (event) => {
+    const card = event.target.closest('.hub-card');
+    if (card) goToProfile(profiles, card.dataset.profileId, 'push');
+  });
+  grid.addEventListener('keydown', (event) => {
+    const card = event.target.closest('.hub-card');
+    if (!card) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      goToProfile(profiles, card.dataset.profileId, 'push');
+    }
+  });
+
+  window.addEventListener('popstate', () => restoreFromUrl(profiles));
+}
+
+async function init() {
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+  let rawData;
+  try {
+    rawData = await loadJson('data.json');
+  } catch (err) {
+    console.error('Failed to load data.json:', err);
+    return;
+  }
+
+  const { profiles: rawProfiles, defaultProfileId, hub } = normalizeProfiles(rawData);
+
+  // defaultProfileId just orders the hub grid (shown first) — it no longer
+  // controls routing; the hub is always the landing page unless ?rom= is set.
+  const profiles = defaultProfileId
+    ? [...rawProfiles].sort((a, b) => (a.id === defaultProfileId ? -1 : b.id === defaultProfileId ? 1 : 0))
+    : rawProfiles;
+
+  renderHub(profiles, hub);
+  initHubNavigation(profiles);
+  initHeaderScrollState();
+  initCodeCopyButtons();
+  initLightbox();
+
+  if (profiles.length <= 1) {
+    // Single-profile site: skip the hub entirely, go straight to the page.
+    await goToProfile(profiles, profiles[0].id, 'none');
+    return;
+  }
+
+  const fromUrl = new URLSearchParams(window.location.search).get('rom');
+  if (fromUrl && getProfileById(profiles, fromUrl)) {
+    await goToProfile(profiles, fromUrl, 'replace');
+  } else {
+    showHubView();
+  }
 }
 
 document.addEventListener('DOMContentLoaded', init);

@@ -22,24 +22,46 @@
   <!-- ===================== HEADER / NAV ===================== -->
   <header class="site-header" id="site-header">
     <div class="container nav-inner">
-      <div class="nav-brand">
-        <!-- Logo block: swap assets/img/logo.svg to rebrand -->
-        <img src="assets/img/logo.svg" alt="ROM logo">
-        <span id="nav-rom-name">ROM</span>
-      </div>
-      <nav class="nav-links">
+      <!-- Brand always shows the collection/maintainer identity (data.json's "hub" block), not a specific ROM — clicking it returns to the all-builds grid. -->
+      <a href="#" class="nav-brand" id="nav-brand-link">
+        <img src="assets/img/logo.svg" alt="Logo" id="nav-brand-logo">
+        <span id="nav-brand-title">Builds</span>
+      </a>
+
+      <a href="#" class="nav-back-link" id="nav-back-link" hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+        All builds
+      </a>
+
+      <nav class="nav-links" id="nav-links" hidden>
         <a href="#device">Device</a>
         <a href="#release">Release</a>
         <a href="#changelog">Changelog</a>
         <a href="#install">Install</a>
         <a href="#links">Links</a>
       </nav>
-      <a href="#links" class="btn btn-tonal nav-cta">Get <span id="nav-cta-rom-name">ROM</span></a>
+
+      <a href="#links" class="btn btn-tonal nav-cta" id="nav-cta" hidden>Get <span id="nav-cta-rom-name">ROM</span></a>
     </div>
   </header>
 
   <main>
-    <!-- ===================== HERO ===================== -->
+    <!-- ===================== HUB (all builds grid) ===================== -->
+    <!-- Shown when there's more than one profile in data.json and none is selected via ?rom=<id>. -->
+    <section id="hub-view" hidden>
+      <div class="container">
+        <span class="eyebrow reveal">All builds</span>
+        <h1 class="section-heading reveal" id="hub-heading">Builds</h1>
+        <p class="section-subheading reveal" id="hub-subheading"></p>
+
+        <div class="hub-grid" id="hub-grid">
+          <!-- Profile tiles are injected here by main.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== DETAIL VIEW (one ROM/device) ===================== -->
+    <div id="detail-view" hidden>
     <section class="hero">
       <div class="hero-blob" aria-hidden="true"></div>
       <div class="container hero-content">
@@ -158,6 +180,7 @@
         </div>
       </div>
     </section>
+    </div>
   </main>
 
   <footer class="site-footer">
