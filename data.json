@@ -2,9 +2,46 @@
   "_comment": "Editorial content lives here. Release version, date, download link, telegram, changelog etc. are fetched live at runtime from the URLs in 'remote' below and will override the matching fields here if the fetch succeeds. The fields under latestRelease/changelog/links act only as an offline fallback (e.g. if the remote source is briefly unreachable).",
 
   "remote": {
-    "_comment": "Live data sources for this device. Point these at your own plato.json / changelog.txt to switch devices.",
+    "_comment": "Live data sources for this device. Point releaseJsonUrl/changelogUrl at your own ROM's feed to switch devices.",
     "releaseJsonUrl": "https://skyx-arch.github.io/crdroid-ota/plato.json",
-    "changelogUrl": "https://skyx-arch.github.io/crdroid-ota/plato_changelog.txt"
+    "changelogUrl": "https://skyx-arch.github.io/crdroid-ota/plato_changelog.txt",
+
+    "releaseJsonMap": {
+      "_comment": "Every ROM's OTA JSON names its fields a little differently — this maps THIS ROM's field names onto the page's internal fields, so a different ROM can be supported by editing this block instead of assets/js/main.js.",
+      "listPath": "response",
+      "entryIndex": 0,
+      "fields": {
+        "version": "version",
+        "device": "device",
+        "filename": "filename",
+        "download": "download",
+        "date": "timestamp",
+        "buildType": "buildtype",
+        "maintainer": "maintainer",
+        "size": "size",
+        "telegram": "telegram",
+        "gapps": "gapps",
+        "firmware": "firmware"
+      },
+      "dateFormat": "unix_seconds",
+      "filenamePatternComment": "Optional. Named-group regex to pull the device codename / Android base version out of the build filename, e.g. crDroidAndroid-16.0-20260705-plato-v12.11.zip. Leave unset to keep device.codename / latestRelease.androidBase as configured below instead.",
+      "filenamePattern": "^crDroidAndroid-(?<androidBase>[\\d.]+)-\\d{8}-(?<codename>[^-]+)-v"
+    },
+
+    "changelogMap": {
+      "_comment": "Changelog text formats vary between ROMs too (bullet character, date-line format). Defaults below match a 'YYYY-MM-DD' date line followed by '-' bulleted changes, with '----'/'====' style underlines auto-ignored.",
+      "dateLinePattern": "^\\d{4}-\\d{2}-\\d{2}$",
+      "bulletPrefixes": ["-", "*"]
+    }
+  },
+
+  "theme": {
+    "_comment": "Optional. Override the site's Material You accent colors to match this ROM's branding — everything else (gradients, badges, hover states, button backgrounds) derives from these automatically. Leave a value out to keep the default. onPrimary (filled-button text color) is auto-computed for contrast if omitted.",
+    "primary": "#D0BCFF",
+    "secondary": "#CCC2DC",
+    "tertiary": "#EFB8C8",
+    "onPrimary": null,
+    "primaryContainer": null
   },
 
   "rom": {
@@ -17,9 +54,13 @@
   "device": {
     "name": "Xiaomi 12T",
     "codename": "plato",
-    "screenshotImage": "assets/img/screenshot-placeholder.svg",
+    "screenshots": [
+      { "src": "assets/img/screenshot-placeholder.svg", "caption": "Home screen" },
+      { "src": "assets/img/screenshot-placeholder-2.svg", "caption": "Quick settings" },
+      { "src": "assets/img/screenshot-placeholder-3.svg", "caption": "App drawer" }
+    ],
     "specs": [
-      { "icon": "cpu", "label": "Chipset", "value": "MediaTek Dimensity 8100 Ultra" },
+      { "icon": "cpu", "label": "Chipset", "value": "MediaTek Dimensity 8200 Ultra" },
       { "icon": "display", "label": "Display", "value": "6.67\" AMOLED, 120Hz" },
       { "icon": "battery", "label": "Battery", "value": "5000 mAh, 120W wired" },
       { "icon": "memory", "label": "Memory", "value": "8/12GB RAM / 128–256GB storage" },
@@ -49,6 +90,8 @@
 
   "installGuide": {
     "_comment": "Fully data-driven install guide — works for any ROM/device. 'linkRef' on a requirement points at a key in 'links' below so it always matches the Downloads button; use 'url' instead for a one-off link that doesn't belong in 'links'.",
+
+    "otaNote": "Already running a previous build of this ROM? You don't need to flash from scratch — just download the new build, install it through the ROM's built-in OTA/updater app (or by sideloading it in Recovery), and reboot. The full steps below are only for a clean install or coming from stock/another ROM.",
 
     "warning": "You are responsible for your own actions and device. Neither the ROM developer nor the author of this guide is responsible for any damage, data loss, or other issues that may occur during the installation process.",
 

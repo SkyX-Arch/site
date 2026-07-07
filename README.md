@@ -58,22 +58,69 @@ can `fetch()` these two files directly.
 
 ### What's parsed out of each source
 
-From the release JSON's first `response[]` entry:
-`version`, `device`, `timestamp` → date, `download`, `buildtype`, `maintainer`,
-`size`, `telegram`, `gapps`, `firmware`. The device codename and Android base
-version are parsed out of the build `filename`
-(`crDroidAndroid-16.0-20260705-plato-v12.11.zip` → Android 16, codename
-`plato`). The GitHub source/releases links are derived from the `download`
-URL's owner/repo.
+Field names are NOT hardcoded — `remote.releaseJsonMap` in `data.json` maps
+this ROM's JSON field names onto the page's internal fields, so pointing
+this page at a different ROM's differently-named OTA JSON is a `data.json`
+edit, not a code edit. See `releaseJsonMap` for the full list of fields
+(`version`, `device`, `filename`, `download`, `date`, `buildType`,
+`maintainer`, `size`, `telegram`, `gapps`, `firmware`) and:
+- `listPath` / `entryIndex` — where the release list lives in the JSON and
+  which entry is "latest" (dot-path, e.g. `"data.builds"`; leave `listPath`
+  empty if the JSON root itself is the array).
+- `dateFormat` — `"unix_seconds"`, `"unix_millis"`, `"iso"`, or `"text"`,
+  depending on how the feed represents the release date.
+- `filenamePattern` — optional named-group regex (`(?<codename>...)`,
+  `(?<androidBase>...)`) to pull the device codename / Android version out
+  of the build filename. Leave unset to keep `device.codename` /
+  `latestRelease.androidBase` exactly as configured in `data.json`.
 
-From the changelog text: each date line (`YYYY-MM-DD`) starts a new entry;
-every following `- ` line up to the next date becomes one changelog bullet.
-The newest entry's own bullets are also used as the release summary, so the
-hero/release panel never says something the changelog doesn't back up.
+The GitHub source/releases links are derived from the `download` URL's
+owner/repo automatically (harmless no-op if downloads aren't hosted on
+GitHub Releases).
 
-If the upstream feed changes its format, only `assets/js/main.js`'s
-`applyRemoteRelease` / `parseChangelogText` functions need updating — nothing
-else in the page depends on the parsing details.
+From the changelog text: `remote.changelogMap` configures the date-line
+regex (`dateLinePattern`) and which characters count as bullets
+(`bulletPrefixes`, e.g. `["-", "*"]`) so different ROMs' changelog
+formatting (dash vs asterisk bullets, `----` vs `====` vs `****`
+underlines) can be supported without editing `main.js`. The newest entry's
+own bullets are also used as the release summary, so the hero/release panel
+never says something the changelog doesn't back up.
+
+If a ROM's feed needs something genuinely different from field-remapping
+(e.g. a non-JSON format), only `assets/js/main.js`'s `applyRemoteRelease` /
+`parseChangelogText` functions need updating — nothing else in the page
+depends on the parsing details.
+
+## Theme colors
+
+`theme` in `data.json` lets you match the site's Material You accent
+palette to a specific ROM's branding without touching any CSS:
+
+```json
+"theme": {
+  "primary": "#D0BCFF",
+  "secondary": "#CCC2DC",
+  "tertiary": "#EFB8C8",
+  "onPrimary": null,
+  "primaryContainer": null
+}
+```
+
+Every gradient, badge, hover state and button background on the page
+derives from `primary`/`secondary`/`tertiary` (via CSS custom properties and
+`color-mix()`), so changing these three values re-themes the whole site.
+`onPrimary` (the text color on filled buttons) is auto-computed for
+readable contrast against `primary` if left `null`; set it explicitly only
+if the automatic choice looks wrong. `primaryContainer` similarly
+auto-derives from `primary`; override it only for fine-tuning.
+
+## The "already installed?" note
+
+`installGuide.otaNote` in `data.json` renders as a callout above the
+install guide's warning, reminding visitors who already have a previous
+build that a normal OTA update (download + install through the updater +
+reboot) is enough — the full flash-from-scratch steps below it are only
+for a clean install. Edit or remove it like any other `installGuide` field.
 
 ## Editing content
 
@@ -120,8 +167,28 @@ Images:
 - `assets/img/logo.svg` — the logo, used in both the header and hero. Replace
   the file (any format works — update `rom.logoImage` in `data.json` if you
   rename it).
-- `assets/img/screenshot-placeholder.svg` — shown inside the phone mockup.
-  Replace with a real screenshot (`device.screenshotImage` in `data.json`).
+- `assets/img/screenshot-placeholder.svg` (and `-2`, `-3`) — shown inside the
+  phone mockup and in the click-to-open lightbox gallery. Replace with real
+  screenshots and list them under `device.screenshots` in `data.json` (each
+  entry is `{ "src", "caption" }` — add or remove entries freely, the first
+  one is what shows in the phone mockup itself).
+
+## Screenshot gallery
+
+Clicking (or pressing Enter/Space on) the phone mockup opens a lightbox that
+lets visitors browse every image in `device.screenshots`, with prev/next
+buttons, arrow-key and Escape support, and a click-outside-to-close backdrop.
+Add or remove screenshots by editing that array — no other code changes
+needed.
+
+## Logo / icon sizing
+
+The header logo, hero logo and favicon are sized with a fixed box plus
+`object-fit: contain`, so swapping in a replacement image of a different
+pixel size or aspect ratio won't stretch or distort it — it'll just be
+letterboxed inside the same box. For best results keep replacement art
+roughly square. The favicon link also sets `sizes="any"`, which is the
+standard fix for SVG favicons rendering at the wrong size in some browsers.
 
 ## Theme / colors
 
@@ -148,6 +215,30 @@ python3 -m http.server 8000
    site automatically. Because release data is fetched live in the browser,
    there's nothing further to rebuild or schedule when a new build ships
    upstream — visitors just see it on their next page load.
+
+### Troubleshooting: "Deployment failed, try again later."
+
+If the `actions/deploy-pages` step fails with exactly this message (after
+the artifact uploads and the deployment is *created* successfully), it's
+almost always one of:
+
+- **Pages source isn't set to "GitHub Actions" yet.** Go to
+  **Settings → Pages → Build and deployment → Source** and select
+  **GitHub Actions** (not "Deploy from a branch"). This is the most common
+  cause on a brand-new repo.
+- **A stuck/pending deployment from a previous run.** Open
+  **Settings → Pages**, or the repo's **Environments → github-pages** tab,
+  cancel anything stuck "in progress", then re-run the workflow.
+- **A transient GitHub Pages backend issue.** This exact message is a known,
+  generic error from GitHub's Pages service itself (see
+  [actions/deploy-pages issues](https://github.com/actions/deploy-pages/issues)
+  for ongoing reports) and usually clears up by simply re-running the
+  workflow a few minutes later.
+
+The unrelated `Node 20 actions are deprecated…` warning in the same log is
+just an informational notice from GitHub's Actions runners — this workflow
+already pins `actions/checkout@v5`, `actions/upload-pages-artifact@v4` and
+`actions/deploy-pages@v5`, which run on Node 24, so it shouldn't reappear.
 
 ## Browser support
 
