@@ -71,7 +71,7 @@ async function loadText(url) {
 // -----------------------------------------------------------------------
 // Remote release JSON — field NAMES vary between ROMs (some use "download",
 // others "url" or "downloadUrl"; some nest the release list under a
-// different key, etc). Instead of hardcoding crDroid's field names, every
+// different key, etc). Instead of hardcoding one ROM's field names, every
 // lookup below goes through releaseJsonMap (configured in data.json), so
 // adapting to a different ROM's OTA JSON is a data.json edit, not a code edit.
 // -----------------------------------------------------------------------
@@ -300,10 +300,23 @@ function renderHero(data) {
   const { rom, latestRelease } = data;
 
   document.title = `${rom.name} — Custom Android Firmware`;
+  const metaDescription = document.getElementById('meta-description');
+  if (metaDescription) metaDescription.setAttribute('content', rom.tagline);
+
   document.getElementById('nav-rom-name').textContent = rom.name;
   document.getElementById('hero-title').textContent = rom.name;
   document.getElementById('hero-tagline').textContent = rom.tagline;
   document.getElementById('footer-rom-name').textContent = rom.name;
+
+  // Every other spot the ROM name appears in static markup (nav CTA button,
+  // install section heading/subheading) — kept as ROM-name-aware spans in
+  // index.html so switching ROMs never requires hand-editing the HTML.
+  const navCtaName = document.getElementById('nav-cta-rom-name');
+  if (navCtaName) navCtaName.textContent = rom.name;
+  const installHeadingName = document.getElementById('install-heading-rom-name');
+  if (installHeadingName) installHeadingName.textContent = rom.name;
+  const installSubheadingName = document.getElementById('install-subheading-rom-name');
+  if (installSubheadingName) installSubheadingName.textContent = rom.name;
 
   const creditEl = document.getElementById('footer-credit');
   if (rom.author && rom.author.name) {
