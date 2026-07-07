@@ -56,8 +56,8 @@
     "codename": "plato",
     "screenshots": [
       { "src": "assets/img/screenshot-placeholder.svg", "caption": "Home screen" },
-      { "src": "assets/img/screenshot-placeholder-2.svg", "caption": "App drawer" },
-      { "src": "assets/img/screenshot-placeholder-3.svg", "caption": "Android version" },
+      { "src": "assets/img/screenshot-placeholder-2.1.svg", "caption": "App drawer" },
+      { "src": "assets/img/screenshot-placeholder-3.1.svg", "caption": "Android version" },
       { "src": "assets/img/screenshot-placeholder-4.svg", "caption": "Updater" },
       { "src": "assets/img/screenshot-placeholder-5.svg", "caption": "Crdroid Settings" }
     ],
