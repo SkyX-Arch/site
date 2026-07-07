@@ -122,6 +122,31 @@ build that a normal OTA update (download + install through the updater +
 reboot) is enough — the full flash-from-scratch steps below it are only
 for a clean install. Edit or remove it like any other `installGuide` field.
 
+## Reusing this template for another ROM
+
+`index.html`, `assets/js/main.js` and `assets/css/style.css` don't contain
+any ROM- or device-specific text anymore — every name, tagline, spec, link,
+install step and color comes from `data.json` (plus the two live-feed URLs
+in `remote`). To stand up a page for a second ROM (e.g. AxionOS) instead of
+crDroid:
+
+1. Copy this whole project folder (or fork the repo) — each deployment is
+   one ROM/device combination, since this is a static site with no backend.
+2. Edit `data.json`: `rom`, `device`, `theme`, `installGuide`, `links`, and
+   `remote` (release JSON URL, changelog URL, and `releaseJsonMap` /
+   `changelogMap` if the new ROM's feed uses different field names or
+   changelog formatting — see below).
+3. Swap `assets/img/logo.svg` and the `screenshot-placeholder*.svg` files
+   for the new ROM's branding and screenshots.
+4. That's it — no HTML or JS edits needed for a rebrand. (`installGuide`'s
+   step text will still need rewriting either way, since flashing commands
+   genuinely differ between ROMs/devices — but that's a `data.json` edit
+   too, just one that reflects real differences rather than boilerplate.)
+
+If you want multiple ROMs live on the *same* page (a device/ROM switcher)
+rather than one deployment per ROM, that's a bigger feature this template
+doesn't include yet — ask if you'd like it added.
+
 ## Editing content
 
 Everything that ISN'T pulled live — the ROM name, tagline, device spec cards,

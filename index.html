@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <!-- EDIT: page title / meta description for your ROM -->
-  <title>crDroid — Custom Android Firmware for Xiaomi 12T</title>
-  <meta name="description" content="crDroid is a custom Android firmware focused on speed, privacy and a clean experience.">
+  <!-- EDIT: page title / meta description for your ROM (also set dynamically from data.json's rom.name/tagline at runtime) -->
+  <title>Custom Android Firmware</title>
+  <meta name="description" content="A custom Android firmware landing page." id="meta-description">
   <!-- sizes="any" tells the browser this SVG can be scaled to whatever pixel
        size the tab/bookmark needs, instead of assuming a fixed intrinsic size -->
   <link rel="icon" type="image/svg+xml" sizes="any" href="assets/img/favicon.svg">
@@ -25,7 +25,7 @@
       <div class="nav-brand">
         <!-- Logo block: swap assets/img/logo.svg to rebrand -->
         <img src="assets/img/logo.svg" alt="ROM logo">
-        <span id="nav-rom-name">crDroid</span>
+        <span id="nav-rom-name">ROM</span>
       </div>
       <nav class="nav-links">
         <a href="#device">Device</a>
@@ -34,7 +34,7 @@
         <a href="#install">Install</a>
         <a href="#links">Links</a>
       </nav>
-      <a href="#links" class="btn btn-tonal nav-cta">Get crDroid</a>
+      <a href="#links" class="btn btn-tonal nav-cta">Get <span id="nav-cta-rom-name">ROM</span></a>
     </div>
   </header>
 
@@ -46,7 +46,7 @@
         <!-- LOGO BLOCK: isolated on purpose — replace assets/img/logo.svg to rebrand -->
         <img src="assets/img/logo.svg" alt="ROM logo" class="hero-logo" id="hero-logo">
 
-        <h1 class="hero-title" id="hero-title">crDroid</h1>
+        <h1 class="hero-title" id="hero-title">ROM</h1>
         <p class="hero-tagline" id="hero-tagline">
           Custom Android firmware built for speed, privacy and a clean, distraction-free experience.
         </p>
@@ -72,7 +72,7 @@
           <div class="phone-frame">
             <div class="phone-notch"></div>
             <div class="phone-screen" id="phone-screen" role="button" tabindex="0" aria-label="View screenshot gallery">
-              <img src="assets/img/screenshot-placeholder.svg" alt="crDroid home screen preview" id="device-screenshot">
+              <img src="assets/img/screenshot-placeholder.svg" alt="Home screen preview" id="device-screenshot">
               <div class="phone-zoom-hint" aria-hidden="true">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3M11 8v6M8 11h6"/></svg>
               </div>
@@ -82,8 +82,8 @@
 
         <div class="showcase-copy reveal">
           <span class="eyebrow">Supported device</span>
-          <h2 class="section-heading" id="device-name">Xiaomi 12T</h2>
-          <p class="section-subheading" id="device-codename">Codename: plato</p>
+          <h2 class="section-heading" id="device-name">Device</h2>
+          <p class="section-subheading" id="device-codename">Codename: —</p>
 
           <div class="specs-grid" id="specs-grid">
             <!-- Spec cards are injected here by main.js -->
@@ -106,7 +106,7 @@
             <span class="release-date" id="release-date">2026-07-05</span>
           </div>
           <p class="release-summary" id="release-summary">
-            The newest crDroid build for plato. See the full changelog below for everything that changed.
+            Loading the latest release details…
           </p>
           <p class="release-meta" id="release-meta"></p>
           <div class="release-actions">
@@ -134,8 +134,8 @@
     <section id="install">
       <div class="container">
         <span class="eyebrow reveal">Get started</span>
-        <h2 class="section-heading reveal">Installing crDroid</h2>
-        <p class="section-subheading reveal">A straight line from stock firmware to crDroid.</p>
+        <h2 class="section-heading reveal">Installing <span id="install-heading-rom-name">ROM</span></h2>
+        <p class="section-subheading reveal">A straight line from stock firmware to <span id="install-subheading-rom-name">ROM</span>.</p>
 
         <!-- Top warning callout, requirements list and prerequisites are injected here -->
         <div id="install-intro"></div>
@@ -162,7 +162,7 @@
 
   <footer class="site-footer">
     <div class="container">
-      <p>&copy; <span id="footer-year"></span> <span id="footer-rom-name">crDroid</span>. Distributed as-is, no warranty.</p>
+      <p>&copy; <span id="footer-year"></span> <span id="footer-rom-name">ROM</span>. Distributed as-is, no warranty.</p>
       <p class="footer-credit" id="footer-credit"></p>
     </div>
   </footer>
