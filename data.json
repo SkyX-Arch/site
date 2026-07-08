@@ -248,7 +248,7 @@
       },
 
       "latestRelease": {
-        "version": "0.0",
+        "version": "2.7",
         "codename": "Unofficial",
         "date": "2026-01-01",
         "androidBase": "Android 16",
@@ -326,10 +326,10 @@
       },
 
       "links": {
-        "github": "",
-        "downloads": "",
-        "releases": "",
-        "telegram": ""
+        "github": "https://github.com/SkyX-Arch/axionos-ota",
+        "downloads": "https://github.com/SkyX-Arch/axionos-ota/releases/latest",
+        "releases": "https://github.com/SkyX-Arch/axionos-ota/releases",
+        "telegram": "https://t.me/SkyXArch"
       }
     }
   ]
