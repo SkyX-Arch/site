@@ -213,7 +213,7 @@
           },
           "dateFormat": "unix_seconds",
           "filenamePatternComment": "Optional. Named-group regex to pull the device codename / Android base version out of the build filename, e.g. crDroidAndroid-16.0-20260705-plato-v12.11.zip. Leave unset to keep device.codename / latestRelease.androidBase as configured below instead.",
-          "filenamePattern": "^crDroidAndroid-(?<androidBase>[\\d.]+)-\\d{8}-(?<codename>[^-]+)-v"
+          "filenamePattern": "^axion-(?<androidBase>[\\d.]+)-\\d{8}-(?<codename>[^-]+)-v"
         },
 
         "changelogMap": {
