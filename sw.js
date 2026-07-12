@@ -26,11 +26,19 @@ const APP_SHELL = [
   'data.json',
   'assets/css/style.css',
   'assets/js/main.js',
-  'assets/img/logo.svg',
-  'assets/img/favicon.svg',
-  'assets/img/screenshot-placeholder.svg',
-  'assets/img/screenshot-placeholder-2.svg',
-  'assets/img/screenshot-placeholder-3.svg'
+  'assets/img/logo main.svg',
+  'assets/img/Crdroid logo.svg',
+  'assets/img/AxionOS logo.svg',
+  'assets/img/screenshot-Crdroid.svg',
+  'assets/img/screenshot-Crdroid-2.svg'
+  'assets/img/screenshot-Crdroid-3.svg'
+  'assets/img/screenshot-Crdroid-4.svg'
+  'assets/img/screenshot-Crdroid-5.svg'
+  'assets/img/screenshot-AxionOS.svg'
+  'assets/img/screenshot-AxionOS-2.svg'
+  'assets/img/screenshot-AxionOS-3.svg'
+  'assets/img/screenshot-AxionOS-4.svg'
+  'assets/img/screenshot-AxionOS-5.svg'
 ];
 
 self.addEventListener('install', (event) => {
