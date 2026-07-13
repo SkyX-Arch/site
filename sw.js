@@ -15,7 +15,7 @@
 // this worker never caches or serves stale data for those.
 // =============================================================================
 
-const CACHE_VERSION = '2';
+const CACHE_VERSION = '3';
 const CACHE_NAME = `romsite-shell-v${CACHE_VERSION}`;
 
 // The core files needed to render the page at all. Add a path here if you
