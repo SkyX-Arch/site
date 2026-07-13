@@ -71,6 +71,12 @@
     <section class="hero">
       <div class="hero-blob" aria-hidden="true"></div>
       <div class="container hero-content">
+        <!-- Status banner: only shown when a profile sets "status": "frozen" or "discontinued" in data.json -->
+        <div class="status-banner" id="status-banner" hidden>
+          <span class="status-banner-icon" id="status-banner-icon"></span>
+          <span id="status-banner-text"></span>
+        </div>
+
         <!-- LOGO BLOCK: isolated on purpose — replace assets/img/logo.svg to rebrand -->
         <img src="assets/img/logo.svg" alt="ROM logo" class="hero-logo" id="hero-logo" decoding="async">
 
