@@ -99,7 +99,7 @@
       "latestRelease": {
         "version": "12.11",
         "codename": "Unofficial",
-        "date": "2026-07-05",
+        "date": "2026-07-12",
         "androidBase": "Android 16",
         "summary": "The newest crDroid build for plato. See the full changelog below for everything that changed."
       },
@@ -264,7 +264,7 @@
       "latestRelease": {
         "version": "2.7",
         "codename": "Unofficial",
-        "date": "2026-01-01",
+        "date": "2026-07-12",
         "androidBase": "Android 16",
         "summary": "The newest AxionOS build for plato. See the full changelog below for everything that changed."
       },
