@@ -8,3 +8,6 @@
       "file": "Guide to collecting error logs.md",
       "keywords": ["adb", "logcat", "app crash", "crash logs", "usb debugging", "developer options", "platform tools", "android debugging", "adb devices", "logcat.txt", "bug report", "application crash", "troubleshooting", "android logs", "debug"]
     }
+
+  ]
+}
