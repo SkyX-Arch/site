@@ -43,6 +43,7 @@
       <nav class="nav-links hub-nav-links" id="hub-nav-links" hidden>
         <a href="#" id="hub-nav-home">Home</a>
         <a href="#hub-grid" id="hub-nav-roms">ROMs</a>
+        <a href="#" id="hub-nav-faq" data-nav-action="faq" hidden>FAQ</a>
         <a href="#" id="hub-nav-github" target="_blank" rel="noopener" hidden>GitHub</a>
         <a href="#" id="hub-nav-telegram" target="_blank" rel="noopener" hidden>Telegram</a>
       </nav>
@@ -54,6 +55,7 @@
         <a href="#changelog">Changelog</a>
         <a href="#install">Install</a>
         <a href="#links">Links</a>
+        <a href="#" id="detail-nav-faq" data-nav-action="faq" hidden>FAQ</a>
       </nav>
 
       <a href="#links" class="btn btn-tonal nav-cta" id="nav-cta" hidden>Get <span id="nav-cta-rom-name">ROM</span></a>
@@ -74,6 +76,7 @@
       </button>
       <a href="#" data-drawer-action="home">Home</a>
       <a href="#" data-drawer-action="roms">Browse ROMs</a>
+      <a href="#" data-drawer-action="faq" id="nav-drawer-faq" hidden>FAQ</a>
       <a href="#" data-drawer-action="github" target="_blank" rel="noopener" id="nav-drawer-github" hidden>GitHub</a>
       <a href="#" data-drawer-action="telegram" target="_blank" rel="noopener" id="nav-drawer-telegram" hidden>Telegram</a>
     </nav>
@@ -105,6 +108,42 @@
 
         <div class="hub-grid" id="hub-grid">
           <!-- Profile tiles are injected here by main.js -->
+        </div>
+      </div>
+    </section>
+
+    <!-- ===================== FAQ ===================== -->
+    <!-- Only appears at all if faq/manifest.json exists and lists at least one article. -->
+    <section id="faq-view" hidden>
+      <div class="container">
+        <!-- Article list -->
+        <div id="faq-list-view">
+          <span class="eyebrow reveal">Help</span>
+          <h1 class="section-heading reveal">FAQ</h1>
+          <p class="section-subheading reveal">Answers to common questions, pulled straight from the project's own docs.</p>
+
+          <div class="faq-search reveal">
+            <svg class="faq-search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
+            <input type="search" id="faq-search-input" placeholder="Search the FAQ…" aria-label="Search the FAQ" autocomplete="off">
+          </div>
+
+          <p class="faq-no-results" id="faq-no-results" hidden>No articles match "<span id="faq-no-results-query"></span>".</p>
+
+          <div class="faq-list" id="faq-list">
+            <!-- Article cards are injected here by main.js -->
+          </div>
+        </div>
+
+        <!-- Single article reading view -->
+        <div id="faq-article-view" hidden>
+          <a href="#" class="nav-back-link faq-back-link" id="faq-back-link">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 6l-6 6 6 6"/></svg>
+            Back to FAQ
+          </a>
+          <h1 class="faq-article-title" id="faq-article-title"></h1>
+          <div class="faq-article markdown-body" id="faq-article-content">
+            <!-- Rendered markdown is injected here by main.js -->
+          </div>
         </div>
       </div>
     </section>
@@ -280,6 +319,8 @@
     <span class="lightbox-counter" id="lightbox-counter"></span>
   </div>
 
+  <!-- Markdown parser for the FAQ section only. Small, no dependencies of its own. -->
+  <script src="https://cdn.jsdelivr.net/npm/marked@12/lib/marked.umd.js"></script>
   <script src="assets/js/main.js"></script>
 </body>
 </html>

@@ -15,7 +15,7 @@
 // this worker never caches or serves stale data for those.
 // =============================================================================
 
-const CACHE_VERSION = '4';
+const CACHE_VERSION = '6';
 const CACHE_NAME = `romsite-shell-v${CACHE_VERSION}`;
 
 // The core files needed to render the page at all. Add a path here if you
@@ -44,18 +44,18 @@ const APP_SHELL = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
+    .then((cache) => cache.addAll(APP_SHELL))
+    .then(() => self.skipWaiting())
   );
 });
 
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys()
-      .then((keys) => Promise.all(
-        keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
-      ))
-      .then(() => self.clients.claim())
+    .then((keys) => Promise.all(
+      keys.filter((key) => key !== CACHE_NAME).map((key) => caches.delete(key))
+    ))
+    .then(() => self.clients.claim())
   );
 });
 
@@ -75,11 +75,11 @@ async function staleWhileRevalidate(request) {
   const cached = await cache.match(request);
 
   const networkFetch = fetch(request)
-    .then((response) => {
-      if (response && response.ok) cache.put(request, response.clone());
-      return response;
-    })
-    .catch(() => null); // offline / request failed — nothing more we can do here
+  .then((response) => {
+    if (response && response.ok) cache.put(request, response.clone());
+    return response;
+  })
+  .catch(() => null); // offline / request failed — nothing more we can do here
 
   if (cached) {
     // Serve the cached copy immediately; refresh the cache in the
@@ -100,3 +100,4 @@ async function staleWhileRevalidate(request) {
     headers: { 'Content-Type': 'text/plain' }
   });
 }
+

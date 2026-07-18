@@ -1,0 +1,10 @@
+{
+  "_comment": "List of FAQ articles, in the order they should appear. 'file' is a path relative to this manifest (i.e. inside the faq/ folder). 'keywords' are extra search terms that don't need to appear in the title/excerpt — the search box matches against title + excerpt + keywords, so add a few obvious ones (error messages, symptoms, slang terms people actually search for). Add or remove entries freely — each just needs a unique 'id' and a matching .md file. If this file (or the whole faq/ folder) is missing, the FAQ nav link simply doesn't appear anywhere on the site.",
+  "articles": [
+    {
+      "id": "Guide to collecting error logs",
+      "title": "Guide to collecting error logs",
+      "excerpt": "A guide to collecting logs of various firmware errors",
+      "file": "Guide to collecting error logs.md",
+      "keywords": ["adb", "logcat", "app crash", "crash logs", "usb debugging", "developer options", "platform tools", "android debugging", "adb devices", "logcat.txt", "bug report", "application crash", "troubleshooting", "android logs", "debug"]
+    }

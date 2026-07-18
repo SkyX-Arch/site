@@ -960,15 +960,178 @@ function renderAll(data) {
 }
 
 // -----------------------------------------------------------------------
-// Hub / detail navigation — lets one page host multiple ROM/device profiles
-// (e.g. crDroid on one device and AxionOS on another), presented as a grid
-// of tiles on a "hub" home view. Picking a tile opens that profile's full
-// page (the existing hero/device/release/changelog/install/links sections);
-// a back link returns to the grid. Each profile is a full data.json-shaped
-// object — see data.json's "profiles" array. The open profile is reflected
-// in a ?rom=<id> URL param so a specific ROM's page is shareable/bookmarkable
-// and the browser's back/forward buttons work as expected.
+// FAQ — an optional docs/knowledge-base section. Article content lives as
+// plain Markdown files under faq/, listed in faq/manifest.json, and is
+// rendered client-side with marked.js (loaded via CDN in index.html) into
+// the same visual language as the rest of the site. If faq/manifest.json is
+// missing or empty, every FAQ nav entry simply stays hidden — the whole
+// feature is opt-in and doesn't require anything from data.json.
 // -----------------------------------------------------------------------
+
+// GitHub's "> [!NOTE]" style alert blockquotes. Maps the marker to a label,
+// an icon (reusing icons already defined above), and a CSS modifier class.
+const MARKDOWN_ALERT_CONFIG = {
+  NOTE: { label: 'Note', icon: 'info' },
+  TIP: { label: 'Tip', icon: 'tip' },
+  IMPORTANT: { label: 'Important', icon: 'warning' },
+  WARNING: { label: 'Warning', icon: 'warning' },
+  CAUTION: { label: 'Caution', icon: 'warning' }
+};
+
+// Turns any blockquote starting with "[!NOTE]" (etc — GitHub's alert
+// syntax) into a styled callout, after marked.js has already rendered the
+// markdown to plain HTML. Blockquotes that don't match are left untouched.
+function enhanceMarkdownAlerts(container) {
+  container.querySelectorAll('blockquote').forEach(blockquote => {
+    const firstParagraph = blockquote.querySelector('p');
+    if (!firstParagraph) return;
+
+    const match = firstParagraph.textContent.match(/^\s*\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i);
+    if (!match) return;
+
+    const type = match[1].toUpperCase();
+    const config = MARKDOWN_ALERT_CONFIG[type];
+    if (!config) return;
+
+    firstParagraph.innerHTML = firstParagraph.innerHTML.replace(/^\s*\[!(?:NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/i, '');
+
+    blockquote.classList.add('markdown-alert', `markdown-alert-${type.toLowerCase()}`);
+    const titleEl = document.createElement('div');
+    titleEl.className = 'markdown-alert-title';
+    titleEl.innerHTML = `${iconMarkup(config.icon)}<span>${config.label}</span>`;
+    blockquote.insertBefore(titleEl, blockquote.firstChild);
+  });
+}
+
+// Returns [] (feature simply doesn't appear) if there's no faq/ folder,
+// no manifest, or it's malformed — this is entirely optional.
+async function loadFaqManifest() {
+  try {
+    const manifest = await loadJson('faq/manifest.json', 'default');
+    return Array.isArray(manifest.articles) ? manifest.articles : [];
+  } catch (err) {
+    return [];
+  }
+}
+
+function renderFaqList(articles) {
+  const list = document.getElementById('faq-list');
+  list.innerHTML = articles.map(article => {
+    // Precomputed lowercase blob of everything searchable, so filtering on
+    // every keystroke is just a substring check — no re-joining per search.
+    const searchBlob = [article.title, article.excerpt, ...(article.keywords || [])]
+      .filter(Boolean).join(' ').toLowerCase();
+
+    return `
+      <div class="faq-card reveal" role="button" tabindex="0" data-faq-id="${article.id}" data-search-blob="${searchBlob.replace(/"/g, '&quot;')}">
+        <div class="faq-card-title">${article.title}</div>
+        ${article.excerpt ? `<div class="faq-card-excerpt">${article.excerpt}</div>` : ''}
+      </div>
+    `;
+  }).join('');
+}
+
+// Client-side keyword filter over title + excerpt + manifest "keywords" —
+// no extra network requests needed, so it filters instantly as you type.
+function filterFaqList(query) {
+  const trimmed = query.trim().toLowerCase();
+  const cards = document.querySelectorAll('#faq-list .faq-card');
+  let visibleCount = 0;
+
+  cards.forEach(card => {
+    const matches = trimmed === '' || card.dataset.searchBlob.includes(trimmed);
+    card.hidden = !matches;
+    if (matches) visibleCount += 1;
+  });
+
+  const noResults = document.getElementById('faq-no-results');
+  noResults.hidden = !(trimmed !== '' && visibleCount === 0);
+  document.getElementById('faq-no-results-query').textContent = query.trim();
+}
+
+function initFaqSearch() {
+  document.getElementById('faq-search-input').addEventListener('input', (event) => {
+    filterFaqList(event.target.value);
+  });
+}
+
+function showFaqListPane() {
+  document.getElementById('faq-list-view').hidden = false;
+  document.getElementById('faq-article-view').hidden = true;
+}
+
+function showFaqArticlePane() {
+  document.getElementById('faq-list-view').hidden = true;
+  document.getElementById('faq-article-view').hidden = false;
+}
+
+async function openFaqArticle(articles, id) {
+  const article = articles.find(a => a.id === id);
+  if (!article) {
+    showFaqListPane();
+    return;
+  }
+
+  document.getElementById('faq-article-title').textContent = article.title;
+  const contentEl = document.getElementById('faq-article-content');
+  contentEl.innerHTML = '<p>Loading…</p>';
+  showFaqArticlePane();
+
+  try {
+    const markdown = await loadText(`faq/${article.file}`, 'default');
+    contentEl.innerHTML = (typeof marked !== 'undefined')
+      ? marked.parse(markdown)
+      : `<pre>${escapeHtml(markdown)}</pre>`; // marked failed to load (e.g. CDN blocked) — show raw text rather than nothing
+    enhanceMarkdownAlerts(contentEl);
+  } catch (err) {
+    console.error(`Failed to load FAQ article "${id}":`, err);
+    contentEl.innerHTML = '<p>This article could not be loaded right now. Please try again later.</p>';
+  }
+}
+
+function initFaqNavigation(profiles, faqArticles) {
+  const list = document.getElementById('faq-list');
+
+  list.addEventListener('click', (event) => {
+    const card = event.target.closest('.faq-card');
+    if (card) goToFaq(profiles, faqArticles, card.dataset.faqId, 'push');
+  });
+
+  list.addEventListener('keydown', (event) => {
+    const card = event.target.closest('.faq-card');
+    if (!card) return;
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      goToFaq(profiles, faqArticles, card.dataset.faqId, 'push');
+    }
+  });
+
+  document.getElementById('faq-back-link').addEventListener('click', (event) => {
+    event.preventDefault();
+    backToFaqList('push');
+  });
+
+  // Article content can contain links to other articles (e.g.
+  // "?faq=troubleshooting") — intercept those instead of a full page reload.
+  document.getElementById('faq-article-content').addEventListener('click', (event) => {
+    const link = event.target.closest('a[href^="?faq="]');
+    if (!link) return;
+    event.preventDefault();
+    const targetId = new URLSearchParams(link.getAttribute('href').slice(1)).get('faq');
+    goToFaq(profiles, faqArticles, targetId, 'push');
+  });
+
+  ['hub-nav-faq', 'detail-nav-faq'].forEach(id => {
+    document.getElementById(id).addEventListener('click', (event) => {
+      event.preventDefault();
+      goToFaq(profiles, faqArticles, null, 'push');
+    });
+  });
+
+  initFaqSearch();
+}
+
+
 let currentSwitchToken = 0; // guards against a slow/stale fetch overwriting a newer render
 
 // Accepts either the new { profiles: [...] } shape or a legacy single-profile
@@ -1035,6 +1198,65 @@ function setExternalLink(elementId, url) {
   }
 }
 
+function renderHubCardBody(profile) {
+  const rom = profile.rom || {};
+  const device = profile.device || {};
+  const release = profile.latestRelease || {};
+  const cardLogoSrc = withCacheBust(rom.logoImage || 'assets/img/logo.svg', profile.assetVersion);
+
+  const statusConfig = STATUS_CONFIG[profile.status];
+  const statusBadge = statusConfig
+    ? `<span class="hub-card-status hub-card-status-${profile.status}">${statusConfig.badgeLabel}</span>`
+    : '';
+
+  const otaSupported = Boolean(profile.remote && profile.remote.releaseJsonUrl);
+  const badges = [
+    profile.featured ? '<span class="hub-card-badge hub-card-badge-featured">Featured</span>' : '',
+    release.codename ? `<span class="hub-card-badge hub-card-badge-build">${release.codename}</span>` : '',
+    otaSupported ? '<span class="hub-card-badge hub-card-badge-ota">OTA</span>' : ''
+  ].filter(Boolean).join('');
+
+  const updatedLabel = release.date ? `Updated ${formatRelativeDate(release.date)}` : '';
+
+  return `
+    <div class="hub-card-logo"><img src="${cardLogoSrc}" alt="" decoding="async" loading="lazy"></div>
+    <div>
+      <div class="hub-card-name">${rom.name || profile.label || profile.id}${statusBadge}</div>
+      <div class="hub-card-device">${device.name || ''}${device.codename ? ` (${device.codename})` : ''}</div>
+    </div>
+    ${badges ? `<div class="hub-card-badges">${badges}</div>` : ''}
+    <div class="hub-card-meta">
+      ${release.version ? `<span>v${release.version}</span>` : ''}
+      ${release.androidBase ? `<span>${release.androidBase}</span>` : ''}
+      ${updatedLabel ? `<span>${updatedLabel}</span>` : ''}
+    </div>
+  `;
+}
+
+// Hub-grid tiles start out showing data.json's local fallback (version,
+// date, etc). This fetches each profile's actual live release feed in the
+// background and patches just that card in place once it arrives — without
+// this, "Updated X ago" and the version shown on the grid could silently be
+// months stale even though the profile's own page shows the current build.
+async function refreshHubCardData(profile) {
+  const remote = profile.remote || {};
+  if (!remote.releaseJsonUrl) return;
+
+  try {
+    const releaseFeed = await loadJson(remote.releaseJsonUrl);
+    const releaseMap = remote.releaseJsonMap || {};
+    applyRemoteRelease(profile, extractReleaseEntry(releaseFeed, releaseMap), releaseMap);
+
+    const card = document.querySelector(`.hub-card[data-profile-id="${profile.id}"]`);
+    if (!card) return; // profile no longer on screen (e.g. grid re-rendered) — nothing to update
+
+    card.innerHTML = renderHubCardBody(profile);
+    fadeInOnLoad(card.querySelector('.hub-card-logo img'));
+  } catch (err) {
+    console.error(`Failed to refresh hub card data for "${profile.id}":`, err);
+  }
+}
+
 function renderHub(profiles, hub = {}) {
   document.getElementById('hub-heading').textContent = hub.title || 'All builds';
   document.getElementById('hub-subheading').textContent = hub.subtitle || '';
@@ -1058,28 +1280,9 @@ function renderHub(profiles, hub = {}) {
 
   const grid = document.getElementById('hub-grid');
   grid.innerHTML = profiles.map(profile => {
-    const rom = profile.rom || {};
-    const device = profile.device || {};
-    const release = profile.latestRelease || {};
     const accentStyle = (profile.theme && profile.theme.primary)
       ? `--hub-card-accent: ${profile.theme.primary};${profile.theme.primaryContainer ? ` --hub-card-accent-container: ${profile.theme.primaryContainer};` : ''}`
       : '';
-    const cardLogoSrc = withCacheBust(rom.logoImage || 'assets/img/logo.svg', profile.assetVersion);
-
-    const statusConfig = STATUS_CONFIG[profile.status];
-    const statusBadge = statusConfig
-      ? `<span class="hub-card-status hub-card-status-${profile.status}">${statusConfig.badgeLabel}</span>`
-      : '';
-
-    const otaSupported = Boolean(profile.remote && profile.remote.releaseJsonUrl);
-    const badges = [
-      profile.featured ? '<span class="hub-card-badge hub-card-badge-featured">Featured</span>' : '',
-      release.codename ? `<span class="hub-card-badge hub-card-badge-build">${release.codename}</span>` : '',
-      otaSupported ? '<span class="hub-card-badge hub-card-badge-ota">OTA</span>' : ''
-    ].filter(Boolean).join('');
-
-    const updatedLabel = release.date ? `Updated ${formatRelativeDate(release.date)}` : '';
-
     const cardModifierClasses = [
       profile.status === 'discontinued' ? ' hub-card-discontinued' : '',
       profile.featured ? ' hub-card-featured' : ''
@@ -1087,27 +1290,28 @@ function renderHub(profiles, hub = {}) {
 
     return `
       <div class="hub-card reveal${cardModifierClasses}" role="button" tabindex="0" data-profile-id="${profile.id}" style="${accentStyle}">
-        <div class="hub-card-logo"><img src="${cardLogoSrc}" alt="" decoding="async" loading="lazy"></div>
-        <div>
-          <div class="hub-card-name">${rom.name || profile.label || profile.id}${statusBadge}</div>
-          <div class="hub-card-device">${device.name || ''}${device.codename ? ` (${device.codename})` : ''}</div>
-        </div>
-        ${badges ? `<div class="hub-card-badges">${badges}</div>` : ''}
-        <div class="hub-card-meta">
-          ${release.version ? `<span>v${release.version}</span>` : ''}
-          ${release.androidBase ? `<span>${release.androidBase}</span>` : ''}
-          ${updatedLabel ? `<span>${updatedLabel}</span>` : ''}
-        </div>
+        ${renderHubCardBody(profile)}
       </div>
     `;
   }).join('');
 
   grid.querySelectorAll('.hub-card-logo img').forEach(fadeInOnLoad);
+
+  // Stats depend on latestRelease.androidBase/remote config too, so refresh
+  // them once every card's live data has come back in (or failed/timed out).
+  Promise.all(profiles.map(profile => refreshHubCardData(profile)))
+    .then(() => renderHubStats(profiles));
+}
+
+// Shows exactly one of the three top-level sections, hiding the other two.
+function showTopLevelView(view) {
+  document.getElementById('hub-view').hidden = view !== 'hub';
+  document.getElementById('detail-view').hidden = view !== 'detail';
+  document.getElementById('faq-view').hidden = view !== 'faq';
 }
 
 function showHubView() {
-  document.getElementById('hub-view').hidden = false;
-  document.getElementById('detail-view').hidden = true;
+  showTopLevelView('hub');
   document.getElementById('nav-back-link').hidden = true;
   document.getElementById('nav-links').hidden = true;
   document.getElementById('nav-cta').hidden = true;
@@ -1118,13 +1322,25 @@ function showHubView() {
 }
 
 function showDetailView(hasHub) {
-  document.getElementById('hub-view').hidden = true;
-  document.getElementById('detail-view').hidden = false;
+  showTopLevelView('detail');
   document.getElementById('nav-back-link').hidden = !hasHub;
   document.getElementById('nav-links').hidden = false;
   document.getElementById('nav-cta').hidden = false;
   window.scrollTo(0, 0);
   initScrollReveal(); // must run AFTER unhiding, same reasoning as above
+}
+
+// FAQ is reached from anywhere (hub, or any ROM's page) — the back-link
+// always has somewhere to return to (the hub, or the single ROM in a
+// single-profile site), so it's always shown here, unlike showDetailView's.
+function showFaqTopLevelView() {
+  showTopLevelView('faq');
+  document.getElementById('nav-back-link').hidden = false;
+  document.getElementById('nav-links').hidden = true;
+  document.getElementById('nav-cta').hidden = true;
+  window.scrollTo(0, 0);
+  renderFooter(null);
+  initScrollReveal();
 }
 
 // Fetches and overlays a profile's live release/changelog data, guarded by
@@ -1170,18 +1386,20 @@ async function loadRemoteDataForProfile(profile, token) {
 // historyMode controls how the URL reflects the navigation: 'replace'
 // (initial load), 'push' (the visitor clicked something, so back/forward
 // can step through it), or 'none' (already handled, e.g. a popstate event).
-function updateUrlParam(paramValue, historyMode) {
+// paramName/paramValue are ROUTING state ('rom'/<id> or 'faq'/<articleId or
+// 'list'>) — only one of them is ever present in the URL at a time, and a
+// null paramName means "neither" (the hub).
+function updateUrlParam(paramName, paramValue, historyMode) {
   if (historyMode === 'none') return;
   const url = new URL(window.location.href);
-  if (paramValue) {
-    url.searchParams.set('rom', paramValue);
-  } else {
-    url.searchParams.delete('rom');
-  }
+  url.searchParams.delete('rom');
+  url.searchParams.delete('faq');
+  if (paramName && paramValue) url.searchParams.set(paramName, paramValue);
+
   if (historyMode === 'push') {
-    window.history.pushState({ rom: paramValue || null }, '', url);
+    window.history.pushState(null, '', url);
   } else {
-    window.history.replaceState({ rom: paramValue || null }, '', url);
+    window.history.replaceState(null, '', url);
   }
 }
 
@@ -1189,9 +1407,21 @@ function goToHub(profiles, historyMode) {
   if (profiles.length <= 1) return; // nothing to go back to in single-profile mode
   currentSwitchToken++; // invalidate any in-flight fetch for the profile being left
   closeLightbox();
-  updateUrlParam(null, historyMode);
+  updateUrlParam(null, null, historyMode);
   resetTheme();
   showHubView();
+}
+
+// "Home" for whichever mode the site is in: the hub grid if there's more
+// than one profile, or the single profile's own page otherwise. Used by the
+// global "back" link and nav-brand click, which need somewhere to go from
+// FAQ even on a single-profile site (where goToHub is deliberately a no-op).
+function goHome(profiles, historyMode) {
+  if (profiles.length > 1) {
+    goToHub(profiles, historyMode);
+  } else {
+    goToProfile(profiles, profiles[0].id, historyMode);
+  }
 }
 
 async function goToProfile(profiles, id, historyMode) {
@@ -1202,7 +1432,7 @@ async function goToProfile(profiles, id, historyMode) {
   const hasHub = profiles.length > 1;
 
   closeLightbox();
-  updateUrlParam(profile.id, historyMode);
+  updateUrlParam('rom', profile.id, historyMode);
 
   resetTheme();
   applyTheme(profile.theme);
@@ -1213,12 +1443,46 @@ async function goToProfile(profiles, id, historyMode) {
   await loadRemoteDataForProfile(profile, token);
 }
 
+// Opens the FAQ section — either the article list (articleId is null/not
+// found) or a specific article, straight from the hub, a ROM's page, or a
+// direct link. FAQ isn't profile-themed, so it always uses the default palette.
+function goToFaq(profiles, faqArticles, articleId, historyMode) {
+  if (faqArticles.length === 0) return; // feature not configured — nothing to open
+
+  currentSwitchToken++;
+  closeLightbox();
+  const resolvedId = faqArticles.some(a => a.id === articleId) ? articleId : null;
+  updateUrlParam('faq', resolvedId || 'list', historyMode);
+
+  resetTheme();
+  showFaqTopLevelView();
+
+  if (resolvedId) {
+    openFaqArticle(faqArticles, resolvedId);
+  } else {
+    showFaqListPane();
+  }
+}
+
+// Local navigation within the FAQ section (article -> list), without
+// re-running the full top-level view switch since we're already there.
+function backToFaqList(historyMode) {
+  updateUrlParam('faq', 'list', historyMode);
+  showFaqListPane();
+}
+
 // Reflects whatever the URL currently says (used for popstate — never
 // pushes/replaces history itself, since the browser already navigated it).
-function restoreFromUrl(profiles) {
-  const fromUrl = new URLSearchParams(window.location.search).get('rom');
-  if (fromUrl && getProfileById(profiles, fromUrl)) {
-    goToProfile(profiles, fromUrl, 'none');
+function restoreFromUrl(profiles, faqArticles) {
+  const params = new URLSearchParams(window.location.search);
+  const romId = params.get('rom');
+  const faqParam = params.get('faq');
+
+  if (romId && getProfileById(profiles, romId)) {
+    goToProfile(profiles, romId, 'none');
+  } else if (faqParam !== null && faqArticles.length > 0) {
+    const articleId = faqArticles.some(a => a.id === faqParam) ? faqParam : null;
+    goToFaq(profiles, faqArticles, articleId, 'none');
   } else if (profiles.length > 1) {
     currentSwitchToken++;
     closeLightbox();
@@ -1229,15 +1493,15 @@ function restoreFromUrl(profiles) {
   }
 }
 
-function initHubNavigation(profiles) {
+function initHubNavigation(profiles, faqArticles) {
   document.getElementById('nav-brand-link').addEventListener('click', (event) => {
     event.preventDefault();
-    goToHub(profiles, 'push');
+    goHome(profiles, 'push');
   });
 
   document.getElementById('nav-back-link').addEventListener('click', (event) => {
     event.preventDefault();
-    goToHub(profiles, 'push');
+    goHome(profiles, 'push');
   });
 
   const grid = document.getElementById('hub-grid');
@@ -1254,7 +1518,7 @@ function initHubNavigation(profiles) {
     }
   });
 
-  window.addEventListener('popstate', () => restoreFromUrl(profiles));
+  window.addEventListener('popstate', () => restoreFromUrl(profiles, faqArticles));
 
   // "Home" in the desktop hub nav is only ever shown while already on the
   // hub, so it just scrolls back to the top instead of navigating anywhere.
@@ -1285,7 +1549,7 @@ function closeNavDrawer() {
 
 // Mobile hamburger + slide-in drawer. Shown on every view (unlike the
 // desktop hub-only nav-links) since it's the only nav access on mobile.
-function initNavDrawer(profiles) {
+function initNavDrawer(profiles, faqArticles) {
   const drawer = document.getElementById('nav-drawer');
 
   document.getElementById('nav-menu-toggle').addEventListener('click', () => {
@@ -1305,7 +1569,7 @@ function initNavDrawer(profiles) {
     if (!link) return;
     const action = link.dataset.drawerAction;
 
-    if (action !== 'home' && action !== 'roms') {
+    if (action !== 'home' && action !== 'roms' && action !== 'faq') {
       closeNavDrawer(); // github/telegram are plain external links — just close and let them navigate
       return;
     }
@@ -1316,14 +1580,16 @@ function initNavDrawer(profiles) {
 
     if (action === 'home') {
       if (isHubVisible) window.scrollTo({ top: 0, behavior: 'smooth' });
-      else goToHub(profiles, 'push');
-    } else {
+      else goHome(profiles, 'push');
+    } else if (action === 'roms') {
       if (isHubVisible) {
         scrollToRomsGrid();
       } else {
         goToHub(profiles, 'push');
         setTimeout(scrollToRomsGrid, 60); // let the hub view render before scrolling to it
       }
+    } else {
+      goToFaq(profiles, faqArticles, null, 'push');
     }
   });
 }
@@ -1385,6 +1651,10 @@ async function init() {
     return;
   }
 
+  // Never throws — resolves to [] if there's no faq/ folder or manifest,
+  // in which case every FAQ nav entry just stays hidden below.
+  const faqArticles = await loadFaqManifest();
+
   try {
     const { profiles: rawProfiles, defaultProfileId, hub } = normalizeProfiles(rawData);
 
@@ -1401,25 +1671,35 @@ async function init() {
       return 0;
     });
 
+    const faqNavHidden = faqArticles.length === 0;
+    ['hub-nav-faq', 'detail-nav-faq', 'nav-drawer-faq'].forEach(id => {
+      document.getElementById(id).hidden = faqNavHidden;
+    });
+
     currentHub = hub;
     renderHub(profiles, hub);
-    initHubNavigation(profiles);
-    initNavDrawer(profiles);
+    renderFaqList(faqArticles);
+    initHubNavigation(profiles, faqArticles);
+    initNavDrawer(profiles, faqArticles);
+    initFaqNavigation(profiles, faqArticles);
     initButtonRipple();
     initHeaderScrollState();
     initCodeCopyButtons();
     initLightbox();
     initDonateModal();
 
-    if (profiles.length <= 1) {
+    const params = new URLSearchParams(window.location.search);
+    const romIdFromUrl = params.get('rom');
+    const faqParamFromUrl = params.get('faq');
+
+    if (romIdFromUrl && getProfileById(profiles, romIdFromUrl)) {
+      await goToProfile(profiles, romIdFromUrl, 'replace');
+    } else if (faqParamFromUrl !== null && faqArticles.length > 0) {
+      const articleId = faqArticles.some(a => a.id === faqParamFromUrl) ? faqParamFromUrl : null;
+      goToFaq(profiles, faqArticles, articleId, 'replace');
+    } else if (profiles.length <= 1) {
       // Single-profile site: skip the hub entirely, go straight to the page.
       await goToProfile(profiles, profiles[0].id, 'none');
-      return;
-    }
-
-    const fromUrl = new URLSearchParams(window.location.search).get('rom');
-    if (fromUrl && getProfileById(profiles, fromUrl)) {
-      await goToProfile(profiles, fromUrl, 'replace');
     } else {
       showHubView();
     }
